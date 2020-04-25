@@ -13,10 +13,10 @@ Exceptions
 Functions
 ---------
     compute_capturezone(
-            deltax, deltay, umbra,
-            xy_start, duration, tol, maxstep,
+            xy_start, duration, tol, maxstep,  nrealizations,
             base, c_dist, p_dist, t_dist,
-            wellfield, observations, nrealizations) :
+            wellfield, observations,
+            spacing, umbra, confined) :
         Run backtraces from all points xy_start using multiple
         realizations of a random model. The results of the
         realizations a collated and returned as a ProbabilityField.
@@ -41,7 +41,7 @@ Authors
 
 Version
 -------
-    24 April 2020
+    25 April 2020
 """
 
 import logging
@@ -67,10 +67,10 @@ class DistributionError(Error):
 
 # -------------------------------------
 def compute_capturezone(
-        xy_start, duration, tol, maxstep, nrealizations,
-        base, c_dist, p_dist, t_dist, confined,
+        xy_start, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
         wellfield, observations,
-        deltax, deltay, umbra):
+        spacing, umbra, confined, tol, maxstep):
     """
     Run backtraces from all points xy_start using multiple realizations of a
     random model. The results of the realizations a collated and returned as
@@ -122,11 +122,6 @@ def compute_capturezone(
             pair   -> (min, max) for a uniform distribution, or
             triple -> (min, mode, max) for a triangular distribution.
 
-    confined : boolean
-        True if it is safe to assume that the aquifer is confined
-        throughout the domain of interest, False otherwise. This is a
-        speed kludge.
-
     wellfield : list of stochastic well tuples
         A well tuple contains four values (sort of): (xw, yw, rw, qdist)
             xw : float
@@ -155,16 +150,19 @@ def compute_capturezone(
             z_std : float
                 The standard deviation of the observed static water level elevation [m].
 
-    deltax : float
-        The spacing of the columns [m] in the ProbabilityField grids.
-
-    deltay : float
-        The spacing of the rows [m] in the ProbabilityField grids.
+    spacing : float
+        The spacing of the rows and the columns [m] in the square
+        ProbabilityField grids.
 
     umbra : float
         The vector-to-raster range [m] when mapping a particle path onto
         the ProbabilityField grids. If a grid node is within umbra of a
         particle path, it is marked as visited.
+
+    confined : boolean
+        True if it is safe to assume that the aquifer is confined
+        throughout the domain of interest, False otherwise. This is a
+        speed kludge.
 
     Returns
     -------
@@ -209,7 +207,7 @@ def compute_capturezone(
     e = np.array([71/57600, -1/40, -71/16695, 71/1920, -17253/339200, 22/525])
 
     # Initialize the probability field.
-    capturezone = ProbabilityField(deltax, deltay)
+    capturezone = ProbabilityField(spacing, spacing)
 
     # Generate and register the capture zone realizations.
     for i in range(nrealizations):

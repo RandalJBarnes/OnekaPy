@@ -4,15 +4,12 @@ Long Prairie example driver file for OnekaPy.
 =============
 Required Data
 =============
-
->>> Define the capture zone simulation.
-
 target : int
     The index identifying the target well in the wellfield.
     That is, the well for which we will compute a stochastic
     capture zone. This uses python's 0-based indexing.
 
-nrays : int
+npaths : int
     The number of rays (starting points for the backtraces) to
     generate uniformly around the target well.
 
@@ -20,20 +17,8 @@ duration : float
     The duration of the capture zone [d]. For example, a 10-year
     capture zone would have a duration = 10*365.25.
 
-tol : float
-    The tolerance [m] for the local error when solving the
-    backtrace differential equation. This is an inherent
-    parameter for an adaptive Runge-Kutta method.
-
-maxstep : float
-    The maximum allowed step in space [m] when solving the
-    backtrace differential equation. This is a maximum space
-    step and NOT a maximum time step.
-
 nrealizations : int
     The number of realizations of the random model.
-
->>> Define the stochastic aquifer properties.
 
 base : float
     The aquifer base elevation [m].
@@ -56,13 +41,6 @@ t_dist : scalar, pair, or triple
         pair   -> (min, max) for a uniform distribution, or
         triple -> (min, mode, max) for a triangular distribution.
 
-confined : boolean
-    True if it is safe to assume that the aquifer is confined
-    throughout the domain of interest, False otherwise. This is a
-    speed kludge.
-
->>> Define the stochastic wellfield (fixed locations, random discharge).
-
 wellfield : list of stochastic well tuples
     A well tuple contains four values (sort of): (xw, yw, rw, qdist)
         xw : float
@@ -76,8 +54,6 @@ wellfield : list of stochastic well tuples
                 scalar -> constant,
                 pair -> (min, max) for a uniform distribution, or
                 triple -> (min, mode, max) for a triangular distribution.
-
->>> Define the stochastic observed static water levels.
 
 observations : list of observation tuples.
     An observation tuple contains four values: (x, y, z_ev, z_std), where
@@ -94,18 +70,29 @@ buffer : float
     The buffer distance [m] around each well. If an obs falls
     within buffer of any well, it is removed.
 
->>> Define the ProabilityField grids.
-
-deltax : float
-    The spacing of the columns [m] in the ProbabilityField grids.
-
-deltay : float
-    The spacing of the rows [m] in the ProbabilityField grids.
+spacing : float
+    The spacing of the rows and the columns [m] in the square
+    ProbabilityField grids.
 
 umbra : float
     The vector-to-raster range [m] when mapping a particle path
     onto the ProbabilityField grids. If a grid node is within
     umbra of a particle path, it is marked as visited.
+
+confined : boolean (optional, default = True)
+    True if it is safe to assume that the aquifer is confined
+    throughout the domain of interest, False otherwise. This is a
+    speed kludge.
+
+tol : float (optional, default = 1)
+    The tolerance [m] for the local error when solving the
+    backtrace differential equation. This is an inherent
+    parameter for an adaptive Runge-Kutta method.
+
+maxstep : float (optional, default = 10)
+    The maximum allowed step in space [m] when solving the
+    backtrace differential equation. This is a maximum space
+    step and NOT a maximum time step.
 
 Authors
 -------
@@ -119,7 +106,7 @@ Authors
 
 Version
 -------
-    24 April 2020
+    25 April 2020
 """
 
 from datetime import datetime
@@ -137,23 +124,22 @@ from oneka import oneka
 # Here are the necessary data.
 # ======================================
 TARGET = 0
-NRAYS = 45
+NPATHS = 45
 DURATION = 10*365.25
-TOL = 1
-MAXSTEP = 30
 NREALIZATIONS = 20
 
 BASE = 0.0
 C_DIST = (1.0, 9.0, 25.0)
 T_DIST = 12.6
 P_DIST = 0.20
-CONFINED = True
-
-DELTAX = 5
-DELTAY = 5
-UMBRA = 20
 
 BUFFER = 100
+SPACING = 10
+UMBRA = 10
+
+CONFINED = True
+TOL = 1
+MAXSTEP = 30
 
 WELLFIELD = [
     (355731, 5091141, 0.1524, 1097.5597),       # relaeid 0000542955 !!TARGET WELL!!
@@ -249,10 +235,11 @@ def main():
 
     # Call the working function.
     oneka(
-        TARGET, NRAYS, DURATION, TOL, MAXSTEP, NREALIZATIONS,
-        BASE, C_DIST, P_DIST, T_DIST, CONFINED,
-        WELLFIELD, OBSERVATIONS, BUFFER,
-        DELTAX, DELTAY, UMBRA)
+        TARGET, NPATHS, DURATION, NREALIZATIONS,
+        BASE, C_DIST, P_DIST, T_DIST,
+        WELLFIELD, OBSERVATIONS,
+        BUFFER, SPACING, UMBRA,
+        CONFINED, TOL, MAXSTEP)
 
     # Shutdown the run.
     elapsedtime = time.time() - start_time

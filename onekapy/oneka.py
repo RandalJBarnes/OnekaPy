@@ -56,10 +56,11 @@ log = logging.getLogger(__name__)
 
 # -----------------------------------------------
 def oneka(
-        target, nrays, duration, tol, maxstep, nrealizations,
-        base, c_dist, p_dist, t_dist, confined,
-        wellfield, observations, buffer,
-        deltax, deltay, umbra):
+        target, npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        wellfield, observations,
+        buffer=100, spacing=10, umbra=10,
+        confined=True, tol=1, maxstep=10):
     """
     The entry-point for the OnekaPy project. As currently written
     the driver computes and plots the stochatic capture zone.
@@ -71,23 +72,13 @@ def oneka(
         That is, the well for which we will compute a stochastic
         capture zone. This uses python's 0-based indexing.
 
-    nrays : int
-        The number of rays (starting points for the backtraces) to
+    npaths : int
+        The number of paths (starting points for the backtraces) to
         generate uniformly around the target well.
 
     duration : float
         The duration of the capture zone [d]. For example, a 10-year
         capture zone would have a duration = 10*365.25.
-
-    tol : float
-        The tolerance [m] for the local error when solving the
-        backtrace differential equation. This is an inherent
-        parameter for an adaptive Runge-Kutta method.
-
-    maxstep : float
-        The maximum allowed step in space [m] when solving the
-        backtrace differential equation. This is a maximum space
-        step and NOT a maximum time step.
 
     nrealizations : int
         The number of realizations of the random model.
@@ -112,11 +103,6 @@ def oneka(
             scalar -> constant,
             pair   -> (min, max) for a uniform distribution, or
             triple -> (min, mode, max) for a triangular distribution.
-
-    confined : boolean
-        True if it is safe to assume that the aquifer is confined
-        throughout the domain of interest, False otherwise. This is a
-        speed kludge.
 
     wellfield : list of stochastic well tuples
         A well tuple contains four values (sort of): (xw, yw, rw, qdist)
@@ -143,20 +129,33 @@ def oneka(
             z_std : float
                 The standard deviation of the observed static water level elevation [m].
 
-    buffer : float
+    buffer : float (optional, default = 100)
         The buffer distance [m] around each well. If an obs falls
         within buffer of any well, it is removed.
 
-    deltax : float
-        The spacing of the columns [m] in the ProbabilityField grids.
+    spacing : float (optional, default = 10)
+        The spacing of the rows and the columns [m] in the square
+        ProbabilityField grids.
 
-    deltay : float
-        The spacing of the rows [m] in the ProbabilityField grids.
-
-    umbra : float
+    umbra : float (optional, default = 10)
         The vector-to-raster range [m] when mapping a particle path
         onto the ProbabilityField grids. If a grid node is within
         umbra of a particle path, it is marked as visited.
+
+    confined : boolean (optional, default = True)
+        True if it is safe to assume that the aquifer is confined
+        throughout the domain of interest, False otherwise. This is a
+        speed kludge.
+
+    tol : float (optional, default = 1)
+        The tolerance [m] for the local error when solving the
+        backtrace differential equation. This is an inherent
+        parameter for an adaptive Runge-Kutta method.
+
+    maxstep : float (optional, default = 10)
+        The maximum allowed step in space [m] when solving the
+        backtrace differential equation. This is a maximum space
+        step and NOT a maximum time step.
 
     Returns
     -------
@@ -180,7 +179,7 @@ def oneka(
             of a multivariate normal distribution using the expected
             value vector and covariance matrix generated in step (3).
 
-        (5) Generate and backtrack nrays of particles uniformly
+        (5) Generate and backtrack npaths of particles uniformly
             distributed around the target well.
 
         (6) Chronicle the particle traces in the ProbabilityField
@@ -195,17 +194,13 @@ def oneka(
 
     # Validate the arguments. This is minimal validation, but it
     # should catch the typos and simple tranpositional errors.
-    assert(isposint(nrays))
+    assert(isposint(npaths))
     assert(isposnumber(duration))
-    assert(isposnumber(tol))
-    assert(isposnumber(maxstep))
     assert(isposint(nrealizations))
 
     assert(isvaliddist(c_dist, 0, np.inf))
     assert(isvaliddist(p_dist, 0, 1))
     assert(isvaliddist(t_dist, 0, np.inf))
-
-    assert(isinstance(confined, bool))
 
     assert(isinstance(wellfield, list))
     for we in wellfield:
@@ -219,10 +214,12 @@ def oneka(
                isnumber(ob[2]) and isposnumber(ob[3]))
 
     assert(isposnumber(buffer))
-
-    assert(isposnumber(deltax))
-    assert(isposnumber(deltay))
+    assert(isposnumber(spacing))
     assert(isposnumber(umbra))
+
+    assert(isinstance(confined, bool))
+    assert(isposnumber(tol))
+    assert(isposnumber(maxstep))
 
     # Setup the constellation of starting points.
     xtarget, ytarget, rtarget = wellfield[target][0:3]
@@ -230,8 +227,8 @@ def oneka(
     xy_start = []
     theta_start = 2*np.pi*random.random()
 
-    for i in range(nrays):
-        theta = theta_start + i*2*np.pi/nrays
+    for i in range(npaths):
+        theta = theta_start + i*2*np.pi/npaths
         x = (rtarget + 1) * np.cos(theta) + xtarget
         y = (rtarget + 1) * np.sin(theta) + ytarget
         xy_start.append((x, y))
@@ -242,10 +239,10 @@ def oneka(
 
     # Compute the capture zone for the target well.
     cz = compute_capturezone(
-        xy_start, duration, tol, maxstep, nrealizations,
-        base, c_dist, p_dist, t_dist, confined,
+        xy_start, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
         wellfield, obs,
-        deltax, deltay, umbra)
+        spacing, umbra, confined, tol, maxstep)
 
     # Make the probability contour plot.
     plt.figure()

@@ -33,7 +33,7 @@ Authors
 
 Version
 -------
-    24 April 2020
+    25 April 2020
 """
 
 import logging
@@ -105,16 +105,16 @@ class Model:
     Methods
     -------
     compute_potential(x, y):
-        Computes the discharge potential at (x, y).
+        Computes the discharge potential [m^3/d] at (x, y).
 
     compute_discharge(x, y):
-        Compute the vertically integrated discharge at (x, y).
+        Compute the vertically integrated discharge [m^2/d] at (x, y).
 
     compute_head(xy):
-        Compute the piezometric head at (x, y).
+        Compute the piezometric head [m]  at (x, y).
 
     compute_velocity(x, y):
-        Compute the vertically averaged seepage velocity vector at (x, y).
+        Compute the vertically averaged seepage velocity vector [m/d] at (x, y).
 
     compute_potential_fosm(self, elevation_ev, elevation_std):
         Compute the avg and std of the discharge potential from the avg and std
@@ -144,8 +144,15 @@ class Model:
         thickness : float
             The thickness of the aquifer [m]. thickness > 0.
 
-        xy : ndarray, shape=(2, ), dtype=float
-            The xy coordinates of the local origin for the regional flow [m].
+        xo : float
+            The x-coordinate of the local origin [m] for the regional flow
+            component of the Oneka model. Generally, this is computed during
+            the model fitting process.
+
+        yo : float
+            The y-coordinate of the local origin [m] for the regional flow
+            component of the Oneka model. Generally, this is computed during
+            the model fitting process.
 
         coef : ndarray, shape=(6, ), dtype=float
             The six coefficient for the regional flow: A, B, C, D, E, F.
@@ -187,7 +194,7 @@ class Model:
     # ---------------------------------
     def compute_potential(self, x, y):
         """
-        Compute the discharge potential at (x, y).
+        Compute the discharge potential [m^3/d] at (x, y).
 
         Parameters
         ----------
@@ -199,7 +206,7 @@ class Model:
 
         Returns
         -------
-        Phi : float
+        potential : float
             The discharge potential [m^3/d].
         """
 
@@ -217,14 +224,15 @@ class Model:
             dx = x - well[0]
             dy = y - well[1]
             r2 = dx*dx + dy*dy
-            potential += well[3] * np.log(r2) * 0.07957747154594767
+            potential += well[3] * np.log(r2) * 0.07957747154594767     # 1/(4*pi) = 0.07957...
 
         return potential
 
     # ---------------------------------
     def compute_discharge(self, x, y):
         """
-        Compute the vertically integrated discharge vector at (x, y).
+        Compute the two components of the vertically integrated discharge
+        vector [m^2/d] at (x, y).
 
         Parameters
         ----------
@@ -253,7 +261,7 @@ class Model:
             dy = y - well[1]
             r2 = dx*dx + dy*dy
 
-            Qx += -well[3] * dx/r2 * 0.15915494309189535
+            Qx += -well[3] * dx/r2 * 0.15915494309189535    # 1/(2*pi) = 0.15915...
             Qy += -well[3] * dy/r2 * 0.15915494309189535
 
         return [Qx, Qy]
@@ -261,7 +269,7 @@ class Model:
     # ---------------------------------
     def compute_head(self, x, y):
         """
-        Compute the piezometric head at (x, y).
+        Compute the piezometric head [m] at (x, y).
 
         Parameters
         ----------
@@ -296,7 +304,8 @@ class Model:
     # ---------------------------------
     def compute_velocity(self, x, y):
         """
-        Compute the vertically averaged seepage velocity vector at (x, y).
+        Compute the two components of the vertically averaged seepage
+        velocity vector [m/d] at (x, y).
 
         Parameters
         ----------
@@ -309,7 +318,7 @@ class Model:
         Returns
         -------
         [Vx, Vy] : list
-            The vertically averaged seepage velocity [m^2/d].
+            The vertically averaged seepage velocity [m/d].
 
         Raises
         ------
@@ -334,9 +343,9 @@ class Model:
     # ---------------------------------
     def compute_velocity_confined(self, x, y):
         """
-        Compute the vertically averaged seepage velocity vector at (x, y).
-        This version of the function assumes that the aquifer is confined,
-        without checking.
+        Compute the two components of the vertically averaged seepage
+        velocity vector [m/d] at (x, y). This version of the function
+        assumes that the aquifer is confined, without checking.
 
         Parameters
         ----------

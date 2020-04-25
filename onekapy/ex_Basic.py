@@ -12,7 +12,7 @@ target : int
     That is, the well for which we will compute a stochastic
     capture zone. This uses python's 0-based indexing.
 
-nrays : int
+npaths : int
     The number of rays (starting points for the backtraces) to
     generate uniformly around the target well.
 
@@ -56,17 +56,6 @@ t_dist : scalar, pair, or triple
         pair   -> (min, max) for a uniform distribution, or
         triple -> (min, mode, max) for a triangular distribution.
 
-buffer : float
-    The buffer distance [m] around each well. If an obs falls
-    within buffer of any well, it is removed.
-
-nrealizations : int
-    The number of realizations of the random model.
-
-buffer : float
-    The buffer distance [m] around each well. If an obs falls
-    within buffer of any well, it is removed.
-
 >>> Define the stochastic wellfield (fixed locations, random discharge).
 
 wellfield : list of stochastic well tuples
@@ -96,18 +85,25 @@ observations : list of observation tuples.
         z_std : float
             The standard deviation of the observed static water level elevation [m].
 
+buffer : float
+    The buffer distance [m] around each well. If an obs falls
+    within buffer of any well, it is removed.
+
 >>> Define the ProabilityField grids.
 
-deltax : float
-    The spacing of the columns [m] in the ProbabilityField grids.
-
-deltay : float
-    The spacing of the rows [m] in the ProbabilityField grids.
+spacing : float
+    The spacing of the rows and the columns [m] in the square
+    ProbabilityField grids.
 
 umbra : float
     The vector-to-raster range [m] when mapping a particle path
     onto the ProbabilityField grids. If a grid node is within
     umbra of a particle path, it is marked as visited.
+
+confined : boolean
+    True if it is safe to assume that the aquifer is confined
+    throughout the domain of interest, False otherwise. This is a
+    speed kludge.
 
 Authors
 -------
@@ -139,19 +135,14 @@ from oneka import oneka
 # Here are the necessary data.
 # ======================================
 TARGET = 0
-NRAYS = 20
+NPATHS = 20
 DURATION = 10*365.25
-TOL = 1
-MAXSTEP = 50
+NREALIZATIONS = 50
 
 BASE = 0.0
 C_DIST = (5.0, 10.0, 25.0)
 T_DIST = (10.0, 15.0, 20.0)
-P_DIST = 0.20
-CONFINED = True
-
-BUFFER = 100
-NREALIZATIONS = 5
+P_DIST = (0.20, 0.25)
 
 WELLFIELD = [
     (2250, 2250, 0.25, (600, 750, 900)),
@@ -186,9 +177,13 @@ OBSERVATIONS = [
     (3000, 3000, 100, 2)
     ]
 
-DELTAX = 5
-DELTAY = 5
+BUFFER = 100
+SPACING = 10
 UMBRA = 10
+
+CONFINED = True
+TOL = 1
+MAXSTEP = 50
 
 
 # ======================================
@@ -206,10 +201,11 @@ def main():
 
     # Call the working function.
     oneka(
-        TARGET, NRAYS, DURATION, TOL, MAXSTEP, NREALIZATIONS,
-        BASE, C_DIST, P_DIST, T_DIST, CONFINED,
-        WELLFIELD, OBSERVATIONS, BUFFER,
-        DELTAX, DELTAY, UMBRA)
+        TARGET, NPATHS, DURATION, NREALIZATIONS,
+        BASE, C_DIST, P_DIST, T_DIST,
+        WELLFIELD, OBSERVATIONS,
+        BUFFER, SPACING, UMBRA,
+        CONFINED, TOL, MAXSTEP)
 
     # Shutdown the run.
     elapsedtime = time.time() - start_time
