@@ -123,15 +123,17 @@ from oneka import oneka
 # ======================================
 # Here are the necessary data.
 # ======================================
+PROJECTNAME = 'ex_LongPrairie example'
+
 TARGET = 0
 NPATHS = 45
 DURATION = 10*365.25
-NREALIZATIONS = 20
+NREALIZATIONS = 100
 
 BASE = 0.0
 C_DIST = (1.0, 9.0, 25.0)
-T_DIST = 12.6
-P_DIST = 0.20
+T_DIST = (10.0, 12.6, 15.0)
+P_DIST = (0.15, 0.20, 0.25)
 
 BUFFER = 100
 SPACING = 10
@@ -139,20 +141,20 @@ UMBRA = 10
 
 CONFINED = True
 TOL = 1
-MAXSTEP = 30
+MAXSTEP = 20
 
 WELLFIELD = [
-    (355731, 5091141, 0.1524, 1097.5597),       # relaeid 0000542955 !!TARGET WELL!!
-    (356276, 5092259, 0.0762,   27.9831),       # relaeid 0000123593
-    (356276, 5092259, 0.0762,  100.5319),       # relaeid 0000123593
-    (355796, 5091952, 0.0762,   12.4369),       # relaeid 0000137314
-    (355800, 5092454, 0.0635,    8.2913),       # relaeid 0000477507
-    (356366, 5092269, 0.0762,   89.1314),       # relaeid 0000600268
-    (356366, 5092269, 0.0762,   24.8739),       # relaeid 0000600268
-    (355674, 5091161, 0.2032,  962.8262),       # relaeid 0000550068
-    (355306, 5091163, 0.0508,    8.5172),       # relaeid 0000640683
-    (356467, 5092921, 0.1016,  274.6490),       # relaeid 0000480438
-    (355736, 5091176, 0.2032,  563.8078)        # relaeid 0000699113
+    (355731, 5091141, 0.1524, 1097.56),       # relaeid 0000542955 !!TARGET WELL!!
+    (356276, 5092259, 0.0762,   27.98),       # relaeid 0000123593
+    (356276, 5092259, 0.0762,  100.53),       # relaeid 0000123593
+    (355796, 5091952, 0.0762,   12.44),       # relaeid 0000137314
+    (355800, 5092454, 0.0635,    8.29),       # relaeid 0000477507
+    (356366, 5092269, 0.0762,   89.13),       # relaeid 0000600268
+    (356366, 5092269, 0.0762,   24.87),       # relaeid 0000600268
+    (355674, 5091161, 0.2032,  962.83),       # relaeid 0000550068
+    (355306, 5091163, 0.0508,    8.52),       # relaeid 0000640683
+    (356467, 5092921, 0.1016,  274.65),       # relaeid 0000480438
+    (355736, 5091176, 0.2032,  563.81)        # relaeid 0000699113
     ]
 
 OBSERVATIONS = [
@@ -228,10 +230,13 @@ def main():
     start_time = time.time()
 
     logging.basicConfig(
-        filename='..\\logs\\LongPrairie' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
+        filename='..\\logs\\OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
         filemode='w',
+        format='%(name)s - %(levelname)s - %(message)s',
         level=logging.INFO)
     log = logging.getLogger(__name__)
+
+    log.info('Project: {0}'.format(PROJECTNAME))
 
     # Call the working function.
     oneka(

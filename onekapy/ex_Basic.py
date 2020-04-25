@@ -123,6 +123,8 @@ from oneka import oneka
 # ======================================
 # Here are the necessary data.
 # ======================================
+PROJECTNAME = 'ex_Basic example'
+
 TARGET = 0
 NPATHS = 20
 DURATION = 10*365.25
@@ -183,10 +185,13 @@ def main():
     start_time = time.time()
 
     logging.basicConfig(
-        filename='..\\logs\\Basic' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
+        filename='..\\logs\\OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
         filemode='w',
-        level=logging.INFO)
+        level=logging.INFO,
+        format='%(name)s - %(levelname)s - %(message)s')
     log = logging.getLogger(__name__)
+
+    log.info('Project: {0}'.format(PROJECTNAME))
 
     # Call the working function.
     oneka(
