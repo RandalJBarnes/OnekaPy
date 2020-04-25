@@ -18,7 +18,7 @@ Version
 import numpy as np
 import pytest
 
-from probabilityfield import ProbabilityField
+from onekapy.probabilityfield import ProbabilityField
 
 
 def test_probabilityfield_constructor():

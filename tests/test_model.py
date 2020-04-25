@@ -20,7 +20,7 @@ Version
 import numpy as np
 import pytest
 
-from model import Model
+from onekapy.model import Model
 
 
 @pytest.fixture
