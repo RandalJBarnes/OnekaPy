@@ -5,6 +5,10 @@ Classes
 -------
     ProbabilityField
 
+Raises
+------
+    RangeError
+
 Notes
 -----
 o   TODO: Add some explanation of what the ProbabilityField is, and
@@ -22,7 +26,7 @@ Authors
 
 Version
 -------
-    24 April 2020
+    25 April 2020
 """
 
 import logging
@@ -32,6 +36,17 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
+class Error(Exception):
+    """Base class for module errors."""
+    pass
+
+
+class RangeError(Error):
+    """Passed argument out of valid range."""
+    pass
+
+
+# =========================================================
 class ProbabilityField:
     """
     An auto-expanding, axis-aligned-grid-based probability field.
@@ -105,10 +120,10 @@ class ProbabilityField:
     def __init__(self, deltax, deltay):
         # validate the parameters
         if deltax <= 0:
-            raise ValueError("<deltax> must be > 0.")
+            raise RangeError("<deltax> must be > 0.")
 
         if deltay <= 0:
-            raise ValueError("<deltay> must be > 0.")
+            raise RangeError("<deltay> must be > 0.")
 
         self.deltax = deltax
         self.deltay = deltay
@@ -161,10 +176,10 @@ class ProbabilityField:
 
         # Validate the arguments.
         if xmin > xmax:
-            raise ValueError("<xmin> must be <= <xmax>.")
+            raise RangeError("<xmin> must be <= <xmax>.")
 
         if ymin > ymax:
-            raise ValueError("<ymin> must be <= <ymax>.")
+            raise RangeError("<ymin> must be <= <ymax>.")
 
         # Intialize the grids so that (xmin, ymin) is up one row and over one column
         # (e.g. in index [1,1], not [0,0]) from the lower left corner.

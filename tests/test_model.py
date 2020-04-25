@@ -14,7 +14,7 @@ Author
 
 Version
 -------
-    24 April 2020
+    25 April 2020
 """
 
 import numpy as np
