@@ -26,7 +26,7 @@ Authors
 
 Version
 -------
-    25 April 2020
+    26 April 2020
 """
 
 import logging
@@ -198,7 +198,7 @@ class ProbabilityField:
 
             self.total_weight = 0.0
 
-            log.debug('grids expanded to ({self.nrows}, {self.ncols}).')
+            log.debug(' grids expanded to ({self.nrows}, {self.ncols}).')
         else:
             # Determine the new grid geometry.
             nrows = self.nrows
@@ -239,7 +239,7 @@ class ProbabilityField:
                 self.nrows = nrows
                 self.ncols = ncols
 
-                log.debug('grids expanded to ({0}, {1})'.format(nrows, ncols))
+                log.debug(' grids expanded to ({0}, {1})'.format(nrows, ncols))
 
     # ---------------------------------
     def insert(self, ax, ay, bx, by, umbra):

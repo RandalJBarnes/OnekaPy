@@ -33,7 +33,7 @@ Authors
 
 Version
 -------
-    25 April 2020
+    26 April 2020
 """
 
 import logging
@@ -482,11 +482,11 @@ class Model:
         try:
             coef_ev, sse = np.linalg.lstsq(WA, Wb, rcond=-1)[0:2]
         except np.linalg.LinAlgError:
-            log.error('lstsq: failed')
+            log.error(' lstsq: failed')
             raise
         else:
             rmse = np.sqrt(sse/nobs)
-            log.info('sse = {0}, rmse = {1}'.format(sse, rmse))
+            log.info(' sse = {0}, rmse = {1}'.format(sse, rmse))
 
         coef_ev = np.reshape(coef_ev, [6, ])
 

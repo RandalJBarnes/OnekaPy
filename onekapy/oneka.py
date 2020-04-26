@@ -228,7 +228,12 @@ def oneka(
     assert(isposnumber(maxstep))
 
     # Log the run information.
-    log_banner()
+    log_the_run(
+        target, npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        wellfield, observations,
+        buffer, spacing, umbra,
+        confined, tol, maxstep)
 
     # Setup the constellation of starting points.
     xtarget, ytarget, rtarget = wellfield[target][0:3]
@@ -265,7 +270,7 @@ def oneka(
         plt.contourf(X, Y, Z, np.linspace(0, 1, 21), cmap='bwr')
         plt.colorbar()
     else:
-        log.warning('There were no valid realizations.')
+        log.warning(' There were no valid realizations.')
 
     # Plot the wells as o markers.
     xw = [we[0] for we in wellfield]
@@ -344,7 +349,7 @@ def filter_obs(observations, wells, buffer):
         if flag:
             obs.append(ob)
         else:
-            log.info('observation removed: {0}'.format(ob))
+            log.info(' observation removed: {0}'.format(ob))
 
     # Replace any duplicate observations with their weighted average.
     # Assume that the duplicate errors are statistically independent.
@@ -363,28 +368,59 @@ def filter_obs(observations, wells, buffer):
             for k in range(i, j):
                 num += obs[k][2]/obs[k][3]**2
                 den += 1/obs[k][3]**2
-                log.info('duplicate observation: {0}'.format(obs[k]))
+                log.info(' duplicate observation: {0}'.format(obs[k]))
             retained_obs.append((obs[i][0], obs[i][1], num/den, np.sqrt(1/den)))
         else:
             retained_obs.append(obs[i])
         i = j
 
-    log.info('observations: {0} observations retained.'.format(len(retained_obs)))
+    log.info('active observations: {0}'.format(len(retained_obs)))
     for ob in retained_obs:
-        log.info('\t active observations: {0}'.format(ob))
+        log.info('     {0}'.format(ob))
 
     return retained_obs
 
 
 # -------------------------------------
-def log_banner():
-    log.info('                                                 ')
-    log.info(' ================================================')
-    log.info(' OOOOOO NN   N EEEEEE K   KK AAAAAA PPPPPP Y    Y')
-    log.info(' O    O N N  N E      K KK   A    A P    P  Y  Y ')
-    log.info(' O    O N  N N EEEEE  KK     AAAAAA PPPPPP   YY  ')
-    log.info(' O    O N   NN E      K KK   A    A P        Y   ')
-    log.info(' OOOOOO N    N EEEEEE K   KK A    A P        Y   ')
-    log.info(' ================================================')
+def log_the_run(
+        target, npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        wellfield, observations,
+        buffer, spacing, umbra,
+        confined, tol, maxstep):
+
+    log.info('                                                   ')
+    log.info(' ==================================================')
+    log.info('  OOOOOO NN   N EEEEEE K   KK AAAAAA PPPPPP Y    Y ')
+    log.info('  O    O N N  N E      K KK   A    A P    P  Y  Y  ')
+    log.info('  O    O N  N N EEEEE  KK     AAAAAA PPPPPP   YY   ')
+    log.info('  O    O N   NN E      K KK   A    A P        Y    ')
+    log.info('  OOOOOO N    N EEEEEE K   KK A    A P        Y    ')
+    log.info(' ==================================================')
     log.info(' Version: {0}'.format(VERSION))
-    log.info('                                                 ')
+    log.info('                                                   ')
+
+    log.info(' target        = {0:d}'.format(target))
+    log.info(' npaths        = {0:d}'.format(npaths))
+    log.info(' duration      = {0:.2f}'.format(duration))
+    log.info(' nrealizations = {0:d}'.format(nrealizations))
+    log.info(' base          = {0:.2f}'.format(base))
+    log.info(' c_dist        = {0}'.format(c_dist))
+    log.info(' p_dist        = {0}'.format(p_dist))
+    log.info(' t_dist        = {0}'.format(t_dist))
+    log.info(' buffer        = {0:.2f}'.format(buffer))
+    log.info(' spacing       = {0:.2f}'.format(spacing))
+    log.info(' umbra         = {0:.2f}'.format(umbra))
+    log.info(' confined      = {0}'.format(confined))
+    log.info(' tol           = {0:.2f}'.format(tol))
+    log.info(' maxstep       = {0:.2f}'.format(maxstep))
+
+    log.info(' wellfield: {0}'.format(len(wellfield)))
+    for we in wellfield:
+        log.info('     {0}'.format(we))
+
+    log.info(' observations: {0}'.format(len(observations)))
+    for ob in observations:
+        log.info('     {0}'.format(ob))
+
+    log.info(' ')
