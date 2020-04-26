@@ -73,7 +73,7 @@ class DistributionError(Error):
 
 # -------------------------------------
 def compute_capturezone(
-        target, npaths, duration, nrealizations,
+        target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         spacing, umbra, confined, tol, maxstep):
@@ -89,9 +89,9 @@ def compute_capturezone(
         That is, the well for which we will compute a stochastic
         capture zone. This uses python's 0-based indexing.
 
-    npaths : int
-        The number of paths (starting points for the backtraces) to
-        generate uniformly around the target well.
+    minpaths : int
+        The minimum number of paths (starting points for the backtraces)
+        to generate uniformly around the target well.
 
     duration : float
         The duration of the capture zone [d]; e.g. a ten year capture zone
@@ -186,7 +186,7 @@ def compute_capturezone(
     """
 
     # Validate the arguments.
-    assert(isposint(npaths))
+    assert(isposint(minpaths))
     assert(isposnumber(duration))
     assert(isposint(nrealizations))
 
@@ -211,6 +211,9 @@ def compute_capturezone(
     assert(isposnumber(tol))
     assert(isposnumber(maxstep))
 
+    # Local constants.
+    STEPAWAY = 1
+
     # Initialize the progress bar.
     bar = progressbar.ProgressBar(max_value=nrealizations)
 
@@ -218,10 +221,10 @@ def compute_capturezone(
     xtarget, ytarget, rtarget = wellfield[target][0:3]
 
     xy_start = []
-    theta = np.linspace(0, 2*np.pi, npaths+1)[0:-1]
+    theta = np.linspace(0, 2*np.pi, minpaths+1)[0:-1]
     for a in theta:
-        x = (rtarget + 1) * np.cos(a) + xtarget
-        y = (rtarget + 1) * np.sin(a) + ytarget
+        x = (rtarget + STEPAWAY) * np.cos(a) + xtarget
+        y = (rtarget + STEPAWAY) * np.sin(a) + ytarget
         xy_start.append((x, y))
 
     # Initialize the probability field.
@@ -268,13 +271,21 @@ def compute_capturezone(
                 Vx, Vy = mo.compute_velocity(xy[0], xy[1])
                 return np.array([-Vx, -Vy])
 
-        # Generate and register the backtraces.
+        # Generate the base backtraces.
+        xy_end = []
         for xys in xy_start:
             vertices, length = compute_backtrace(xys, duration, tol, maxstep, feval)
             x = [v[0] for v in vertices]
             y = [v[1] for v in vertices]
             capturezone.rasterize(x, y, umbra)
+            xy_end.append(vertices[-1])
 
+        # Generate infill backtraces as needed.
+        xy_infill = []
+
+
+
+        # Register the backtraces.
         capturezone.register(1)
 
         # Update the progress bar.

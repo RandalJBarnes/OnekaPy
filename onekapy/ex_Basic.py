@@ -23,7 +23,7 @@ from oneka import oneka
 PROJECTNAME = 'ex_Basic example'
 
 TARGET = 0
-NPATHS = 20
+MINPATHS = 20
 DURATION = 10*365.25
 NREALIZATIONS = 50
 
@@ -92,7 +92,7 @@ def main():
 
     # Call the working function.
     oneka(
-        TARGET, NPATHS, DURATION, NREALIZATIONS,
+        TARGET, MINPATHS, DURATION, NREALIZATIONS,
         BASE, C_DIST, P_DIST, T_DIST,
         WELLFIELD, OBSERVATIONS,
         BUFFER, SPACING, UMBRA,

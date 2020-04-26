@@ -64,7 +64,7 @@ VERSION = '26 April 2020'
 
 # -----------------------------------------------
 def oneka(
-        target, npaths, duration, nrealizations,
+        target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         buffer=100, spacing=10, umbra=10,
@@ -80,9 +80,9 @@ def oneka(
         That is, the well for which we will compute a stochastic
         capture zone. This uses python's 0-based indexing.
 
-    npaths : int
-        The number of paths (starting points for the backtraces) to
-        generate uniformly around the target well.
+    minpaths : int
+        The minimum number of paths (starting points for the backtraces)
+        to generate uniformly around the target well.
 
     duration : float
         The duration of the capture zone [d]. For example, a 10-year
@@ -187,10 +187,12 @@ def oneka(
             of a multivariate normal distribution using the expected
             value vector and covariance matrix generated in step (3).
 
-        (5) Generate and backtrack npaths of particles uniformly
+        (5) Generate and backtrack minpaths of particles uniformly
             distributed around the target well.
 
-        (6) Chronicle the particle traces in the ProbabilityField
+        (6) Infill additional paths where necessary.
+
+        (7) Chronicle the particle traces in the ProbabilityField
             grid.
 
     o Most of the work outlined above is orchestrated by the
@@ -199,7 +201,7 @@ def oneka(
 
     # Validate the arguments. This is minimal validation, but it
     # should catch the typos and simple tranpositional errors.
-    assert(isposint(npaths))
+    assert(isposint(minpaths))
     assert(isposnumber(duration))
     assert(isposint(nrealizations))
 
@@ -228,7 +230,7 @@ def oneka(
 
     # Log the run information.
     log_the_run(
-        target, npaths, duration, nrealizations,
+        target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         buffer, spacing, umbra,
@@ -240,7 +242,7 @@ def oneka(
 
     # Compute the capture zone for the target well.
     cz = compute_capturezone(
-        target, npaths, duration, nrealizations,
+        target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, obs,
         spacing, umbra, confined, tol, maxstep)
@@ -371,7 +373,7 @@ def filter_obs(observations, wells, buffer):
 
 # -------------------------------------
 def log_the_run(
-        target, npaths, duration, nrealizations,
+        target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         buffer, spacing, umbra,
@@ -389,7 +391,7 @@ def log_the_run(
     log.info('                                                   ')
 
     log.info(' target        = {0:d}'.format(target))
-    log.info(' npaths        = {0:d}'.format(npaths))
+    log.info(' minpaths      = {0:d}'.format(minpaths))
     log.info(' duration      = {0:.2f}'.format(duration))
     log.info(' nrealizations = {0:d}'.format(nrealizations))
     log.info(' base          = {0:.2f}'.format(base))
