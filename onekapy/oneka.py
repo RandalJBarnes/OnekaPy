@@ -256,8 +256,9 @@ def oneka(
         X = np.linspace(cz.xmin, cz.xmax, cz.ncols)
         Y = np.linspace(cz.ymin, cz.ymax, cz.nrows)
         Z = cz.pgrid/cz.total_weight
-        plt.contourf(X, Y, Z, np.linspace(0, 1, 21), cmap='bwr')
-        plt.colorbar()
+        plt.contourf(X, Y, Z, np.linspace(0, 1, 11), cmap='tab10')
+        plt.colorbar(ticks=np.linspace(0, 1, 11))
+        plt.contour(X, Y, Z, np.linspace(0, 1, 11), colors=['black'])
     else:
         log.warning(' There were no valid realizations.')
 

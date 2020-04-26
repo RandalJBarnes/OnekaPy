@@ -23,9 +23,9 @@ from oneka import oneka
 PROJECTNAME = 'ex_Basic example'
 
 TARGET = 0
-MINPATHS = 20
+MINPATHS = 25
 DURATION = 10*365.25
-NREALIZATIONS = 50
+NREALIZATIONS = 250
 
 BASE = 0.0
 C_DIST = (5.0, 10.0, 25.0)
@@ -71,7 +71,7 @@ UMBRA = 10
 
 CONFINED = True
 TOL = 1
-MAXSTEP = 30
+MAXSTEP = 20
 
 
 # ======================================
