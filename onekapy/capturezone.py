@@ -46,7 +46,7 @@ Authors
 
 Version
 -------
-    25 April 2020
+    26 April 2020
 """
 
 import logging
@@ -230,8 +230,8 @@ def compute_capturezone(
                 return np.array([-Vx, -Vy])
 
         # Generate and register the backtraces.
-        for xs, ys in xy_start:
-            vertices, length = compute_backtrace(xs, ys, duration, tol, maxstep, feval)
+        for xys in xy_start:
+            vertices, length = compute_backtrace(xys, duration, tol, maxstep, feval)
             x = [v[0] for v in vertices]
             y = [v[1] for v in vertices]
             capturezone.rasterize(x, y, umbra)
@@ -245,18 +245,15 @@ def compute_capturezone(
 
 
 # -------------------------------------
-def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
+def compute_backtrace(xys, duration, tol, maxstep, feval):
     """
     Compute a single backtrace using the Dormand-Prince adaptive
     Runge-Kutta explicit solver.
 
     Parameters
     ----------
-    xs : float
-        x-coordinate [m] of the starting point.
-
-    ys : float
-        y-coordinate [m] of the starting point.
+    xys : (float, float)
+        The (x-coordinate, y-coordinate) [m] of the starting point.
 
     duration : float
         The duration of the capture zone [d]; e.g. a ten year capture zone
@@ -336,8 +333,8 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
     dt = 0.1                # This is an arbitrary choice.
     length = 0
 
-    vertices = [(xs, ys)]
-    xy = np.array([xs, ys])
+    vertices = [xys]
+    xy = np.array([xys[0], xys[1]])
 
     try:
         k1 = feval(xy)

@@ -108,11 +108,14 @@ def main():
 
 # -------------------------------------
 def profile_me():
-    filename = '..\\logs\\profile_' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.txt'
-    cProfile.run('ex_Basic.main()', filename)
-    p = pstats.Stats(filename)
+    pr = cProfile.Profile()
+    pr.enable()
+    main()
+    pr.disable()
+
+    p = pstats.Stats(pr)
     p.strip_dirs()
-    p.sort_stats(SortKey.TIME).print_stats(20)
+    p.sort_stats(SortKey.TIME).print_stats(10)
 
 
 # -------------------------------------
