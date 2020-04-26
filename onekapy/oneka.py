@@ -243,15 +243,15 @@ def oneka(
 
     # Compute the capture zone for the target well.
     start_time = time.time()
-    
+
     cz = compute_capturezone(
         target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, obs,
         spacing, umbra, confined, tol, maxstep)
-        
+
     stop_time = time.time()
-    print(' compute_capturezone time = {0:.1f} seconds'.format(stop_time-start_time))
+    print('\n\ncompute_capturezone time = {0:.1f} seconds'.format(stop_time-start_time))
 
     # Make the probability contour plot.
     plt.figure()
@@ -281,6 +281,8 @@ def oneka(
     xo = [ob[0] for ob in obs]
     yo = [ob[1] for ob in obs]
     plt.plot(xo, yo, 'P', markeredgecolor='k', markerfacecolor='w')
+
+    plt.show()
 
     return cz
 

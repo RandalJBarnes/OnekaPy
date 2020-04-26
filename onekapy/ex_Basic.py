@@ -23,9 +23,9 @@ from oneka import oneka
 PROJECTNAME = 'ex_Basic example'
 
 TARGET = 0
-MINPATHS = 25
+MINPATHS = 50
 DURATION = 10*365.25
-NREALIZATIONS = 100
+NREALIZATIONS = 250
 
 BASE = 0.0
 C_DIST = (5.0, 10.0, 25.0)
@@ -103,7 +103,7 @@ def main():
     log.info('Total elapsed time = %.4f seconds' % elapsedtime)
     logging.shutdown()
 
-    print('\n\nTotal elapsed time = %.4f seconds' % elapsedtime)
+    print('\nTotal elapsed time = %.4f seconds' % elapsedtime)
 
 
 # -------------------------------------
