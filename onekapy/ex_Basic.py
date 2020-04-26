@@ -71,7 +71,7 @@ UMBRA = 10
 
 CONFINED = True
 TOL = 1
-MAXSTEP = 50
+MAXSTEP = 30
 
 
 # ======================================

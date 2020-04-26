@@ -49,6 +49,7 @@ Version
     26 April 2020
 """
 
+import collections
 import logging
 import numpy as np
 import progressbar
@@ -213,6 +214,8 @@ def compute_capturezone(
 
     # Local constants.
     STEPAWAY = 1
+    MIN_ANGLE = np.pi/(4*minpaths)
+    MAX_DIST = 2*spacing
 
     # Initialize the progress bar.
     bar = progressbar.ProgressBar(max_value=nrealizations)
@@ -272,18 +275,44 @@ def compute_capturezone(
                 return np.array([-Vx, -Vy])
 
         # Generate the base backtraces.
-        xy_end = []
-        for xys in xy_start:
-            vertices, length = compute_backtrace(xys, duration, tol, maxstep, feval)
+        endpoints = []
+        for k in range(len(theta)):
+            vertices, length = compute_backtrace(xy_start[k], duration, tol, maxstep, feval)
             x = [v[0] for v in vertices]
             y = [v[1] for v in vertices]
             capturezone.rasterize(x, y, umbra)
-            xy_end.append(vertices[-1])
+            endpoints.append((theta[k], vertices[-1][0], vertices[-1][1]))
 
         # Generate infill backtraces as needed.
-        xy_infill = []
+        """
+        endpoints.append((2*np.pi, endpoints[0][1], endpoints[0][2]))
 
+        k = 0
+        while k < len(endpoints)-1:
+            ta = endpoints[k][0]
+            xa = endpoints[k][1]
+            ya = endpoints[k][2]
 
+            tb = endpoints[k+1][0]
+            xb = endpoints[k+1][1]
+            yb = endpoints[k+1][2]
+
+            if (tb - ta > MIN_ANGLE and np.hypot(xb-xa, yb-ya) > MAX_DIST):
+                an = (tb + ta)/2
+                xn = (rtarget + STEPAWAY) * np.cos(an) + xtarget
+                yn = (rtarget + STEPAWAY) * np.sin(an) + ytarget
+                vertices, length = compute_backtrace((xn, yn), duration, tol, maxstep, feval)
+
+                x = [v[0] for v in vertices]
+                y = [v[1] for v in vertices]
+                capturezone.rasterize(x, y, umbra)
+
+                endpoints.insert(k+1, (an, xn, yn))
+                log.info('infill: ({0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f})'
+                         .format(an, xn, yn, tb-ta, np.hypot(xb-xa, yb-ya)))
+            else:
+                k = k+1
+        """
 
         # Register the backtraces.
         capturezone.register(1)
