@@ -55,6 +55,7 @@ import progressbar
 
 from model import Model, AquiferError
 from probabilityfield import ProbabilityField
+from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
 
 
 log = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class DistributionError(Error):
 
 # -------------------------------------
 def compute_capturezone(
-        xy_start, duration, nrealizations,
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         spacing, umbra, confined, tol, maxstep):
@@ -83,12 +84,14 @@ def compute_capturezone(
 
     Parameters
     ----------
-    xy_start : list
-        The list of starting points (xs, ys) [m] for the backtraces.
+    target : int
+        The index identifying the target well in the wellfield.
+        That is, the well for which we will compute a stochastic
+        capture zone. This uses python's 0-based indexing.
 
-        To create a stochastic capture zone for a single well, these
-        points will be uniformly distrbuted around the well at a
-        distance larger than the well radius.
+    npaths : int
+        The number of paths (starting points for the backtraces) to
+        generate uniformly around the target well.
 
     duration : float
         The duration of the capture zone [d]; e.g. a ten year capture zone
@@ -182,10 +185,44 @@ def compute_capturezone(
         calls.
     """
 
-    # TODO: Validate the arguments.
+    # Validate the arguments.
+    assert(isposint(npaths))
+    assert(isposnumber(duration))
+    assert(isposint(nrealizations))
+
+    assert(isvaliddist(c_dist, 0, np.inf))
+    assert(isvaliddist(p_dist, 0, 1))
+    assert(isvaliddist(t_dist, 0, np.inf))
+
+    assert(isinstance(wellfield, list) and len(wellfield) >= 1)
+    for we in wellfield:
+        assert(len(we) == 4 and isnumber(we[0]) and isnumber(we[1]) and
+               isposnumber(we[2]) and isvaliddist(we[3], -np.inf, np.inf))
+    assert(isvalidindex(target, len(wellfield)))
+
+    assert(isinstance(observations, list) and len(observations) > 6)
+    for ob in observations:
+        assert(len(ob) == 4 and isnumber(ob[0]) and isnumber(ob[1]) and
+               isnumber(ob[2]) and isposnumber(ob[3]))
+
+    assert(isposnumber(spacing))
+    assert(isposnumber(umbra))
+    assert(isinstance(confined, bool))
+    assert(isposnumber(tol))
+    assert(isposnumber(maxstep))
 
     # Initialize the progress bar.
     bar = progressbar.ProgressBar(max_value=nrealizations)
+
+    # Setup the constellation of starting points.
+    xtarget, ytarget, rtarget = wellfield[target][0:3]
+
+    xy_start = []
+    theta = np.linspace(0, 2*np.pi, npaths+1)[0:-1]
+    for a in theta:
+        x = (rtarget + 1) * np.cos(a) + xtarget
+        y = (rtarget + 1) * np.sin(a) + ytarget
+        xy_start.append((x, y))
 
     # Initialize the probability field.
     capturezone = ProbabilityField(spacing, spacing)
@@ -206,18 +243,20 @@ def compute_capturezone(
         thickness = generate_random_variate(t_dist)
 
         # Create the model with the random components.
-        mo = Model(base, conductivity, porosity, thickness,
-                   0, 0, np.zeros((6, )), wells)
+        mo = Model(base, conductivity, porosity, thickness, wells)
 
         # Generate the realizations for the regional flow ceofficients.
         coef_ev, coef_cov = mo.fit_coefficients(observations)
-        coef_rng = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
-        mo.coef = coef_rng
+        mo.coef = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
 
         # Log some basic information about the realization.
-        recharge = 2*(coef_rng[0]+coef_rng[1])
-        log.info('Realization #{0:d}: {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.4e}'
+        recharge = 2*(mo.coef[0] + mo.coef[1])
+        log.info(' Realization #{0:d}: {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.4e}'
                  .format(i, base, conductivity, porosity, thickness, recharge))
+        log.info('     coef ev:  ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
+                 .format(coef_ev[0], coef_ev[1], coef_ev[2], coef_ev[3], coef_ev[4], coef_ev[5]))
+        log.info('     coef rng: ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
+                 .format(mo.coef[0], mo.coef[1], mo.coef[2], mo.coef[3], mo.coef[4], mo.coef[5]))
 
         # Define the local backtracing velocity function.
         if confined:

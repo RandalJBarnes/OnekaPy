@@ -46,13 +46,12 @@ Authors
 
 Version
 -------
-    25 April 2020
+    26 April 2020
 """
 
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 
 from capturezone import compute_capturezone
 from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
@@ -138,33 +137,33 @@ def oneka(
             z_std : float
                 The standard deviation of the observed static water level elevation [m].
 
-    buffer : float (optional, default = 100)
+    buffer : float, optional [default = 100]
         The buffer distance [m] around each well. If an obs falls
         within buffer of any well, it is removed.
 
-    spacing : float (optional, default = 10)
+    spacing : float, optional
         The spacing of the rows and the columns [m] in the square
-        ProbabilityField grids.
+        ProbabilityField grids. Default is 10.
 
-    umbra : float (optional, default = 10)
+    umbra : float, optional
         The vector-to-raster range [m] when mapping a particle path
         onto the ProbabilityField grids. If a grid node is within
-        umbra of a particle path, it is marked as visited.
+        umbra of a particle path, it is marked as visited. Default is 10.
 
-    confined : boolean (optional, default = True)
+    confined : boolean, optional
         True if it is safe to assume that the aquifer is confined
         throughout the domain of interest, False otherwise. This is a
-        speed kludge.
+        speed kludge. Default is True.
 
-    tol : float (optional, default = 1)
+    tol : float, optional
         The tolerance [m] for the local error when solving the
         backtrace differential equation. This is an inherent
-        parameter for an adaptive Runge-Kutta method.
+        parameter for an adaptive Runge-Kutta method. Default is 1.
 
-    maxstep : float (optional, default = 10)
+    maxstep : float, optional
         The maximum allowed step in space [m] when solving the
         backtrace differential equation. This is a maximum space
-        step and NOT a maximum time step.
+        step and NOT a maximum time step. Default is 10.
 
     Returns
     -------
@@ -208,13 +207,13 @@ def oneka(
     assert(isvaliddist(p_dist, 0, 1))
     assert(isvaliddist(t_dist, 0, np.inf))
 
-    assert(isinstance(wellfield, list))
+    assert(isinstance(wellfield, list) and len(wellfield) >= 1)
     for we in wellfield:
         assert(len(we) == 4 and isnumber(we[0]) and isnumber(we[1]) and
                isposnumber(we[2]) and isvaliddist(we[3], -np.inf, np.inf))
     assert(isvalidindex(target, len(wellfield)))
 
-    assert(isinstance(observations, list))
+    assert(isinstance(observations, list) and len(observations) > 6)
     for ob in observations:
         assert(len(ob) == 4 and isnumber(ob[0]) and isnumber(ob[1]) and
                isnumber(ob[2]) and isposnumber(ob[3]))
@@ -235,25 +234,13 @@ def oneka(
         buffer, spacing, umbra,
         confined, tol, maxstep)
 
-    # Setup the constellation of starting points.
-    xtarget, ytarget, rtarget = wellfield[target][0:3]
-
-    xy_start = []
-    theta_start = 2*np.pi*random.random()
-
-    for i in range(npaths):
-        theta = theta_start + i*2*np.pi/npaths
-        x = (rtarget + 1) * np.cos(theta) + xtarget
-        y = (rtarget + 1) * np.sin(theta) + ytarget
-        xy_start.append((x, y))
-
     # Filter out all of the obs that are too close to any pumping well.
     obs = filter_obs(observations, wellfield, buffer)
     assert(len(obs) > 6)
 
     # Compute the capture zone for the target well.
     cz = compute_capturezone(
-        xy_start, duration, nrealizations,
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, obs,
         spacing, umbra, confined, tol, maxstep)
@@ -278,6 +265,7 @@ def oneka(
     plt.plot(xw, yw, 'o', markeredgecolor='k', markerfacecolor='w')
 
     # Plot the target well as a star marker.
+    xtarget, ytarget, rtarget = wellfield[target][0:3]
     plt.plot(xtarget, ytarget, '*', markeredgecolor='k', markerfacecolor='w', markersize=12)
 
     # Plot the retained observations as fat + markers.

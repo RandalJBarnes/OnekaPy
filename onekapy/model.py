@@ -76,21 +76,6 @@ class Model:
     thickness : float
         The thickness of the aquifer [m]. thickness > 0.
 
-    xo : float
-        The x-coordinate of the local origin [m] for the regional flow
-        component of the Oneka model. Generally, this is computed during
-        the model fitting process.
-
-    yo : float
-        The y-coordinate of the local origin [m] for the regional flow
-        component of the Oneka model. Generally, this is computed during
-        the model fitting process.
-
-    coef : ndarray, dtype=double, shape=(6, )
-        The six defining coefficients, A through F, for the regional flow
-        component of the Oneka model. Generally, these are computed during
-        the model fitting process.
-
     wells : list
         The list of well tuples. Each well tuple has four components.
             xw : float
@@ -101,6 +86,17 @@ class Model:
                 The radius of the well [m]. rw > 0.
             qw : float
                 The discharge of the well [m^3/d].
+
+    xo : float, optional
+        The x-coordinate of the local origin [m] for the regional flow
+        component of the Oneka model.
+
+    yo : float, optional
+        The y-coordinate of the local origin [m] for the regional flow
+        component of the Oneka model.
+
+    coef : ndarray, shape=(6, ), dtype=float
+        The six coefficient for the regional flow: A, B, C, D, E, F.
 
     Methods
     -------
@@ -126,7 +122,8 @@ class Model:
     """
 
     # ---------------------------------
-    def __init__(self, base, conductivity, porosity, thickness, xo, yo, coef, wells):
+    def __init__(self, base, conductivity, porosity, thickness, wells,
+                 xo=0, yo=0, coef=np.zeros((6, ))):
         """
         Initializes all of the attributes for a Model object.
 
@@ -144,19 +141,6 @@ class Model:
         thickness : float
             The thickness of the aquifer [m]. thickness > 0.
 
-        xo : float
-            The x-coordinate of the local origin [m] for the regional flow
-            component of the Oneka model. Generally, this is computed during
-            the model fitting process.
-
-        yo : float
-            The y-coordinate of the local origin [m] for the regional flow
-            component of the Oneka model. Generally, this is computed during
-            the model fitting process.
-
-        coef : ndarray, shape=(6, ), dtype=float
-            The six coefficient for the regional flow: A, B, C, D, E, F.
-
         wells : list
             The list of well tuples. Each well tuple has four components.
                 xw : float
@@ -170,6 +154,22 @@ class Model:
 
                 qw : float
                     The discharge of the well [m^3/d].
+
+        xo : float, optional
+            The x-coordinate of the local origin [m] for the regional flow
+            component of the Oneka model. Generally, this is computed during
+            the model fitting process. Default is 0.
+
+        yo : float, optional
+            The y-coordinate of the local origin [m] for the regional flow
+            component of the Oneka model. Generally, this is computed during
+            the model fitting process. Default is 10.
+
+        coef : ndarray, dtype=double, shape=(6, ), optional
+            The six defining coefficients, A through F, for the regional flow
+            component of the Oneka model. Generally, these are computed during
+            the model fitting process. Default is np.zeros((6, )).
+
         """
 
         self.base = base
