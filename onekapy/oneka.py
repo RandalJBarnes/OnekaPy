@@ -52,6 +52,7 @@ Version
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 from capturezone import compute_capturezone
 from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
@@ -241,11 +242,16 @@ def oneka(
     assert(len(obs) > 6)
 
     # Compute the capture zone for the target well.
+    start_time = time.time()
+    
     cz = compute_capturezone(
         target, minpaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, obs,
         spacing, umbra, confined, tol, maxstep)
+        
+    stop_time = time.time()
+    print(' compute_capturezone time = {0:.1f} seconds'.format(stop_time-start_time))
 
     # Make the probability contour plot.
     plt.figure()

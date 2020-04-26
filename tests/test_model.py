@@ -38,7 +38,7 @@ def my_model():
         (200.0, 100.0, 1.0, 1000.0)
         ]
 
-    mo = Model(base, conductivity, porosity, thickness, xo, yo, coef, wells)
+    mo = Model(base, conductivity, porosity, thickness, wells, xo, yo, coef)
     return mo
 
 

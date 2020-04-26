@@ -214,8 +214,6 @@ def compute_capturezone(
 
     # Local constants.
     STEPAWAY = 1
-    MIN_ANGLE = np.pi/(4*minpaths)
-    MAX_DIST = 2*spacing
 
     # Initialize the progress bar.
     bar = progressbar.ProgressBar(max_value=nrealizations)
@@ -277,7 +275,7 @@ def compute_capturezone(
         # Generate the base backtraces.
         endpoints = []
         for k in range(len(theta)):
-            vertices, length = compute_backtrace(xy_start[k], duration, tol, maxstep, feval)
+            vertices = compute_backtrace(xy_start[k], duration, tol, maxstep, feval)
             x = [v[0] for v in vertices]
             y = [v[1] for v in vertices]
             capturezone.rasterize(x, y, umbra)
@@ -356,9 +354,6 @@ def compute_backtrace(xys, duration, tol, maxstep, feval):
         The list of (x, y) tuples containing the vertices of the
         backtrace path.
 
-    length : float
-        The total length of the backtrace path.
-
     Notes
     -----
     o   This function use the Dormand-Prince implementation of an
@@ -410,7 +405,6 @@ def compute_backtrace(xys, duration, tol, maxstep, feval):
     # Initialize: the starting point is the first vertex.
     t = 0
     dt = 0.1                # This is an arbitrary choice.
-    length = 0
 
     vertices = [xys]
     xy = np.array([xys[0], xys[1]])
@@ -443,7 +437,6 @@ def compute_backtrace(xys, duration, tol, maxstep, feval):
                 k1 = k2
                 xy = xyt
                 vertices.append(xy)
-                length += ds
 
             dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
 
@@ -451,7 +444,7 @@ def compute_backtrace(xys, duration, tol, maxstep, feval):
         log.warning(' trace terminated prematurely at t = {0:.2f} < duration.'.format(t))
 
     finally:
-        return (vertices, length)
+        return vertices
 
 
 # -------------------------------------
