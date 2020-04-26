@@ -12,18 +12,25 @@ Exceptions
 Functions
 ---------
     oneka
+        The entry-point for the OnekaPy project. As currently written,
+        this driver computes and plots the stochastic capture zone.
+
+    filter_obs(observations, wells, buffer):
+        Partition the obs into retained and removed. An observation is
+        removed if it is within buffer of a well. Duplicate observations
+        (i.e. obs at the same loction) are average using a minimum
+        variance weighted average.
+
+    log_banner()
+        Sends a program banner to the log file.
 
 Notes
 -----
 o   This package is a work in progress.
 
-o   This package uses the python logging facility. As expected, we log
-    warnings and errors. We also log quite a bit a bit of information
-    about the run.
-
 o   We need to think about what events to log.
 
-o   This package currently generates plots using python's matplotlib
+o   This module currently generates plots using python's matplotlib
     facility. We will remove these plots when we integrate into
     ArcGIS Pro.
 
@@ -53,6 +60,8 @@ from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
 
 log = logging.getLogger(__name__)
 
+VERSION = '26 April 2020'
+
 
 # -----------------------------------------------
 def oneka(
@@ -62,8 +71,8 @@ def oneka(
         buffer=100, spacing=10, umbra=10,
         confined=True, tol=1, maxstep=10):
     """
-    The entry-point for the OnekaPy project. As currently written
-    the driver computes and plots the stochatic capture zone.
+    The entry-point for the OnekaPy project. As currently written,
+    this driver computes and plots the stochastic capture zone.
 
     Parameters
     ----------
@@ -185,11 +194,8 @@ def oneka(
         (6) Chronicle the particle traces in the ProbabilityField
             grid.
 
-    o Most of the work outlined above is orchestrated by the capturezone
-        function.
-
-    o We may be able to parallelize the tracking particles to speed up
-        the overall execution.
+    o Most of the work outlined above is orchestrated by the
+      create_capturezone function.
     """
 
     # Validate the arguments. This is minimal validation, but it
@@ -220,6 +226,9 @@ def oneka(
     assert(isinstance(confined, bool))
     assert(isposnumber(tol))
     assert(isposnumber(maxstep))
+
+    # Log the run information.
+    log_banner()
 
     # Setup the constellation of starting points.
     xtarget, ytarget, rtarget = wellfield[target][0:3]
@@ -321,7 +330,6 @@ def filter_obs(observations, wells, buffer):
         weighted average, with the weight for the i'th obs
         proportional to 1/sigma^2_i. This is the minimum variance
         estimator. See, for example,
-
         https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
     """
 
@@ -366,3 +374,17 @@ def filter_obs(observations, wells, buffer):
         log.info('\t active observations: {0}'.format(ob))
 
     return retained_obs
+
+
+# -------------------------------------
+def log_banner():
+    log.info('                                                 ')
+    log.info(' ================================================')
+    log.info(' OOOOOO NN   N EEEEEE K   KK AAAAAA PPPPPP Y    Y')
+    log.info(' O    O N N  N E      K KK   A    A P    P  Y  Y ')
+    log.info(' O    O N  N N EEEEE  KK     AAAAAA PPPPPP   YY  ')
+    log.info(' O    O N   NN E      K KK   A    A P        Y   ')
+    log.info(' OOOOOO N    N EEEEEE K   KK A    A P        Y   ')
+    log.info(' ================================================')
+    log.info(' Version: {0}'.format(VERSION))
+    log.info('                                                 ')

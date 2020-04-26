@@ -29,6 +29,11 @@ Functions
         Partition the obs into retained and removed. An observation
         is removed if it is within buffer of a well.
 
+Notes
+-----
+o   We may be able to parallelize the tracking particles to speed up
+    the overall execution.
+
 Authors
 -------
     Dr. Randal J. Barnes
@@ -190,21 +195,8 @@ def compute_capturezone(
 
     # TODO: Validate the arguments.
 
-    # Local constants.
-    EPS = np.finfo(float).eps
-
     # Initialize the progress bar.
     bar = progressbar.ProgressBar(max_value=nrealizations)
-
-    # Dormand-Prince constants for an adaptive Runge-Kutta integrator.
-    a2 = np.array([1/5])
-    a3 = np.array([3/40, 9/40])
-    a4 = np.array([44/45, -56/15, 32/9])
-    a5 = np.array([19372/6561, -25360/2187, 64448/6561, -212/729])
-    a6 = np.array([9017/3168, -355/33, 46732/5247, 49/176, -5103/18656])
-    a7 = np.array([35/384, 0, 500/1113, 125/192, -2187/6784, 11/84])
-
-    e = np.array([71/57600, -1/40, -71/16695, 71/1920, -17253/339200, 22/525])
 
     # Initialize the probability field.
     capturezone = ProbabilityField(spacing, spacing)
@@ -249,55 +241,80 @@ def compute_capturezone(
                 return np.array([-Vx, -Vy])
 
         # Generate and register the backtraces.
-        for x, y in xy_start:
-            vertices = [(x, y)]         # The starting point is the first vertex.
-            xy = np.array([x, y])
-            t = 0
-            dt = 0.1                    # TODO: test this out.
-
-            try:
-                k1 = feval(xy)
-
-                while (t < duration):
-                    # Do not step past duration.
-                    if (t + dt > duration):
-                        dt = duration - t
-
-                    # The 5th order Runge-Kutta with Dormand-Prince constants.
-                    k2 = feval(xy + dt*(a2[0]*k1))
-                    k3 = feval(xy + dt*(a3[0]*k1 + a3[1]*k2))
-                    k4 = feval(xy + dt*(a4[0]*k1 + a4[1]*k2 + a4[2]*k3))
-                    k5 = feval(xy + dt*(a5[0]*k1 + a5[1]*k2 + a5[2]*k3 + a5[3]*k4))
-                    k6 = feval(xy + dt*(a6[0]*k1 + a6[1]*k2 + a6[2]*k3 + a6[3]*k4 + a6[4]*k5))
-
-                    xyt = xy + dt*(a7[0]*k1 + a7[2]*k3 + a7[3]*k4 + a7[4]*k5 + a7[5]*k6)
-
-                    # Control time step for maximum space step and maximum estimated error.
-                    k2 = feval(xyt)
-                    est = np.linalg.norm(dt*(e[0]*k1 + e[1]*k2 + e[2]*k3 + e[3]*k4 +
-                                             e[4]*k5 + e[5]*k6), np.inf)
-                    ds = np.linalg.norm(xyt - xy)
-
-                    if (est < tol) and (ds < maxstep):
-                        t = t + dt
-                        k1 = k2
-                        xy = xyt
-                        vertices.append(xy)
-
-                    dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
-
-            except AquiferError:
-                log.warning(f'trace terminated prematurely at t = {t:.2f} < duration.')
-
-            finally:
-                x = [v[0] for v in vertices]
-                y = [v[1] for v in vertices]
-                capturezone.rasterize(x, y, umbra)
+        for xs, ys in xy_start:
+            vertices, length = compute_backtrace(xs, ys, duration, tol, maxstep, feval)
+            x = [v[0] for v in vertices]
+            y = [v[1] for v in vertices]
+            capturezone.rasterize(x, y, umbra)
 
         capturezone.register(1)
+
+        # Update the progress bar.
         bar.update(i+1)
 
     return capturezone
+
+
+# -------------------------------------
+def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
+    # Local constants.
+    EPS = np.finfo(float).eps
+
+    # Dormand-Prince constants for an adaptive Runge-Kutta integrator.
+    a2 = np.array([1/5])
+    a3 = np.array([3/40, 9/40])
+    a4 = np.array([44/45, -56/15, 32/9])
+    a5 = np.array([19372/6561, -25360/2187, 64448/6561, -212/729])
+    a6 = np.array([9017/3168, -355/33, 46732/5247, 49/176, -5103/18656])
+    a7 = np.array([35/384, 0, 500/1113, 125/192, -2187/6784, 11/84])
+
+    e = np.array([71/57600, -1/40, -71/16695, 71/1920, -17253/339200, 22/525])
+
+    # Initialize: the starting point is the first vertex.
+    t = 0
+    dt = 0.1                # This is an arbitrary choice.
+    length = 0
+
+    vertices = [(xs, ys)]
+    xy = np.array([xs, ys])
+
+    try:
+        k1 = feval(xy)
+
+        while (t < duration):
+            # Do not step past duration.
+            if (t + dt > duration):
+                dt = duration - t
+
+            # The 5th order Runge-Kutta with Dormand-Prince constants.
+            k2 = feval(xy + dt*(a2[0]*k1))
+            k3 = feval(xy + dt*(a3[0]*k1 + a3[1]*k2))
+            k4 = feval(xy + dt*(a4[0]*k1 + a4[1]*k2 + a4[2]*k3))
+            k5 = feval(xy + dt*(a5[0]*k1 + a5[1]*k2 + a5[2]*k3 + a5[3]*k4))
+            k6 = feval(xy + dt*(a6[0]*k1 + a6[1]*k2 + a6[2]*k3 + a6[3]*k4 + a6[4]*k5))
+
+            xyt = xy + dt*(a7[0]*k1 + a7[2]*k3 + a7[3]*k4 + a7[4]*k5 + a7[5]*k6)
+
+            # Control time step for maximum space step and maximum estimated error.
+            k2 = feval(xyt)
+            est = np.linalg.norm(dt*(e[0]*k1 + e[1]*k2 + e[2]*k3 + e[3]*k4 +
+                                     e[4]*k5 + e[5]*k6), np.inf)
+            ds = np.linalg.norm(xyt - xy)
+
+            if (est < tol) and (ds < maxstep):
+                t = t + dt
+                k1 = k2
+                xy = xyt
+                vertices.append(xy)
+                length += ds
+
+            dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
+
+    except AquiferError:
+        log.warning(f'trace terminated prematurely at t = {t:.2f} < duration.')
+
+    finally:
+        return (vertices, length)
 
 
 # -------------------------------------
