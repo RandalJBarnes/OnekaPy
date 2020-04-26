@@ -246,6 +246,17 @@ class Model:
         -------
         [Qx, Qy] : list
             The vertically integrated discharge [m^2/d].
+
+        Notes
+        -----
+        o   Vertically integrated discharge is best explain by the
+            Strack et al (2006). reference given below.
+
+        References
+        ----------
+        o   Strack, O. D. L., Barnes, R. J., & Verruijt, A., "Vertically
+            Integrated Flows, Discharge Potential, and the Dupuit-Forchheimer
+            Approximation", Ground Water, 2006, 44, 72-75.
         """
 
         # Compute the contribution from the regional flow.
@@ -367,9 +378,9 @@ class Model:
         Notes
         -----
         o This version of compute_velocity assumes that the aquifer is
-            confined, without checking. If this assumption is appropriate,
-            the computations are much faster because the call to
-            compute_head is unnecessary.
+            confined, WITHOUT checking. The justification for this kludge
+            is speed. The computations are much faster because the calls
+            to compute_head are unnecessary.
         """
 
         Qx, Qy = self.compute_discharge(x, y)
