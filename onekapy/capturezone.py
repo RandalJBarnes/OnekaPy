@@ -176,21 +176,10 @@ def compute_capturezone(
 
     Notes
     -----
-    o This is a VERY time-consuming function.
+    o   This is a time-consuming function.
 
-    o Much of the Runge-Kutta code is translated from the MATLAB implementation
-        given BY www.mathtools.com.
-
-    References
-    ----------
-    o Dormand, J. R.; Prince, P. J. (1980), A family of embedded Runge-Kutta
-        formulae, Journal of Computational and Applied Mathematics, 6 (1): 19–26,
-        doi:10.1016/0771-050X(80)90013-3.
-
-    o Dormand, John R. (1996), Numerical Methods for Differential Equations:
-        A Computational Approach, Boca Raton: CRC Press, pp. 82–84, ISBN 0-8493-9433-3.
-
-    o https://www.mathstools.com/section/main/dormand_prince_method
+    o   We may be able to speed this up by parallelizing the backtrace
+        calls.
     """
 
     # TODO: Validate the arguments.
@@ -257,6 +246,78 @@ def compute_capturezone(
 
 # -------------------------------------
 def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
+    """
+    Compute a single backtrace using the Dormand-Prince adaptive
+    Runge-Kutta explicit solver.
+
+    Parameters
+    ----------
+    xs : float
+        x-coordinate [m] of the starting point.
+
+    ys : float
+        y-coordinate [m] of the starting point.
+
+    duration : float
+        The duration of the capture zone [d]; e.g. a ten year capture zone
+        will have a duration = 10*365.25.
+
+    tol : float
+        The tolerance [m] for the local error when solving the backtrace
+        differential equation. This is an inherent parameter for an
+        adaptive Runge-Kutta method.
+
+    maxstep : float
+        The maximum allowed step in space [m] when solving the backtrace
+        differential equation. This is NOT the maximum time step.
+
+    feval : function
+        The backtracing velocity function.
+
+    Returns
+    -------
+    vertices : list
+        The list of (x, y) tuples containing the vertices of the
+        backtrace path.
+
+    length : float
+        The total length of the backtrace path.
+
+    Notes
+    -----
+    o   This function use the Dormand-Prince implementation of an
+        adaptive Runge-Kutta algorithm to solve the backtrace ode.
+        See, for example,
+
+            https://en.wikipedia.org/wiki/Dormand-Prince_method
+
+    o   Much of the Dormand-Prince Runge-Kutta code is translated
+        and adpated from the MATLAB implementation given by
+        www.mathtools.com.
+
+    o   This implementation is unique is two significant ways:
+
+        --  The feval is NOT a function of time, as we are working
+            with steadystate flow.
+
+        --  The maximum time step is governed by a maximum space step.
+
+    o   The Dormand-Prince Runge-Kutta is currently the default method
+        in MATLAB's ode45, as well as SciPy's ode integration library.
+
+    References
+    ----------
+    o   Dormand, J. R.; Prince, P. J. (1980), A family of embedded
+        Runge-Kutta formulae, Journal of Computational and Applied
+        Mathematics, 6 (1): 19–26, doi:10.1016/0771-050X(80)90013-3.
+
+    o   Dormand, John R. (1996), Numerical Methods for Differential
+        Equations: A Computational Approach, Boca Raton: CRC Press,
+        pp. 82–84, ISBN 0-8493-9433-3.
+
+    o   https://www.mathstools.com/section/main/dormand_prince_method
+    """
+
     # Local constants.
     EPS = np.finfo(float).eps
 
@@ -311,7 +372,7 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
             dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
 
     except AquiferError:
-        log.warning(f'trace terminated prematurely at t = {t:.2f} < duration.')
+        log.warning(' trace terminated prematurely at t = {0:.2f} < duration.'.format(t))
 
     finally:
         return (vertices, length)
