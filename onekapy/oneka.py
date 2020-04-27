@@ -46,7 +46,7 @@ Authors
 
 Version
 -------
-    26 April 2020
+    27 April 2020
 """
 
 import logging
@@ -60,7 +60,7 @@ from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
 
 log = logging.getLogger(__name__)
 
-VERSION = '26 April 2020'
+VERSION = '27 April 2020'
 
 
 # -----------------------------------------------
