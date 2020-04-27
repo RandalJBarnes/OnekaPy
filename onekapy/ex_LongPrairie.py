@@ -3,7 +3,7 @@ Long Prairie example driver file for OnekaPy.
 
 Version
 -------
-    26 April 2020
+    27 April 2020
 """
 
 from datetime import datetime
@@ -23,9 +23,9 @@ from oneka import oneka
 PROJECTNAME = 'ex_LongPrairie example'
 
 TARGET = 0
-MINPATHS = 45
+MINPATHS = 100
 DURATION = 10*365.25
-NREALIZATIONS = 400
+NREALIZATIONS = 1
 
 BASE = 0.0
 C_DIST = (1.0, 9.0, 25.0)
@@ -34,7 +34,7 @@ P_DIST = (0.15, 0.20, 0.25)
 
 BUFFER = 100
 SPACING = 10
-UMBRA = 15
+UMBRA = 20
 
 CONFINED = True
 TOL = 1
