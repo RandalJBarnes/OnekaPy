@@ -46,10 +46,9 @@ Authors
 
 Version
 -------
-    26 April 2020
+    27 April 2020
 """
 
-import collections
 import logging
 import numpy as np
 import progressbar
