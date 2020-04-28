@@ -23,7 +23,7 @@ from oneka import oneka
 PROJECTNAME = 'ex_LongPrairie example'
 
 TARGET = 0
-MINPATHS = 100
+MINPATHS = 80
 DURATION = 10*365.25
 NREALIZATIONS = 1
 
