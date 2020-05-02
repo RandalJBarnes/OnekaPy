@@ -23,9 +23,9 @@ from oneka import oneka
 PROJECTNAME = 'ex_LongPrairie example'
 
 TARGET = 0
-MINPATHS = 80
+MINPATHS = 100
 DURATION = 10*365.25
-NREALIZATIONS = 1
+NREALIZATIONS = 500
 
 BASE = 0.0
 C_DIST = (1.0, 9.0, 25.0)
