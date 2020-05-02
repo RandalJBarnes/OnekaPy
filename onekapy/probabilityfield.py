@@ -1,5 +1,6 @@
 """
-Defines and implements an auto-expanding, axis-aligned-grid-based probability field.
+Defines and implements an auto-expanding, axis-aligned-grid-based
+probability field.
 
 Classes
 -------
@@ -11,8 +12,8 @@ Raises
 
 Notes
 -----
-o   TODO: Add some explanation of what the ProbabilityField is, and
-    how it works.
+o   TODO: Add some explanation of what the ProbabilityField is,
+    and how it works.
 
 Authors
 -------
@@ -26,7 +27,7 @@ Authors
 
 Version
 -------
-    26 April 2020
+    02 May 2020
 """
 
 import logging
@@ -36,17 +37,19 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------
 class Error(Exception):
     """Base class for module errors."""
     pass
 
 
+# ---------------------------------------------------------
 class RangeError(Error):
     """Passed argument out of valid range."""
     pass
 
 
-# =========================================================
+# ---------------------------------------------------------
 class ProbabilityField:
     """
     An auto-expanding, axis-aligned-grid-based probability field.
@@ -98,12 +101,14 @@ class ProbabilityField:
         vector-to-raster range of umbra.
 
     insert(self, ax, ay, bx, by, umbra):
-        Insert a single linear segment [(ax, ay), (bx, by)] of a single track into the
-        registration array (rgrid), using a vector-to-raster range of umbra.
+        Insert a single linear segment [(ax, ay), (bx, by)] of a single track
+        into the registration array (rgrid), using a vector-to-raster range
+        of umbra.
 
     register(self, weight):
-        Add the current realization's registration rgrid into the current probability
-        pgrid with pseudo-probability weight. The registration rgrid is then reset.
+        Add the current realization's registration rgrid into the current
+        probability pgrid with pseudo-probability weight. The registration
+        rgrid is then reset.
 
     reset(self):
         Reset registration rgrid. This is needed when discarding a
@@ -117,7 +122,7 @@ class ProbabilityField:
     """
 
     # ---------------------------------
-    def __init__(self, deltax, deltay):
+    def __init__(self, deltax, deltay, xo=np.nan, yo=np.nan):
         # validate the parameters
         if deltax <= 0:
             raise RangeError("<deltax> must be > 0.")
@@ -128,8 +133,22 @@ class ProbabilityField:
         self.deltax = deltax
         self.deltay = deltay
 
-        self.nrows = 0
-        self.ncols = 0
+        if np.isnan(xo) or np.isnan(yo):
+            self.nrows = 0
+            self.ncols = 0
+        else:
+            self.xmin = xo - deltax
+            self.xmax = xo + deltax
+            self.ymin = yo - deltay
+            self.ymax = yo + deltay
+
+            self.nrows = 3
+            self.ncols = 3
+
+            self.pgrid = np.zeros((self.nrows, self.ncols), dtype=np.float)
+            self.rgrid = np.zeros((self.nrows, self.ncols), dtype=np.bool)
+
+            self.total_weight = 0.0
 
     # ---------------------------------
     def __repr__(self):

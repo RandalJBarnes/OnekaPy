@@ -14,7 +14,7 @@ Author
 
 Version
 -------
-    25 April 2020
+    02 May 2020
 """
 
 import numpy as np
@@ -114,7 +114,7 @@ def test_model_compute_fit(my_model):
         [86.00, 26.00, 673.24, 0.10],
         [90.00, 57.00, 734.72, 0.10]])
 
-    coef_ev, coef_cov = my_model.fit_coefficients(obs)
+    coef_ev, coef_cov = my_model.fit_regional_flow(obs)
 
     assert np.isclose(my_model.xo, x_true, rtol=0.001)
     assert np.isclose(my_model.yo, y_true, rtol=0.001)

@@ -12,7 +12,7 @@ Author
 
 Version
 -------
-    25 April 2020
+    02 May 2020
 """
 
 import numpy as np

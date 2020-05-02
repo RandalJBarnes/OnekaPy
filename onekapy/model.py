@@ -13,8 +13,9 @@ Exceptions
 
 Notes
 -----
-o   An Oneka-type analytic element model includes three analytic element components:
-    uniform flow, uniform recharge, and a set of discharge-specified wells.
+o   An Oneka-type analytic element model includes three analytic element
+    components: uniform flow, uniform recharge, and a set of discharge-
+    specified wells.
 
 o   How to line-by-line profile:
     - Add the decorator "@profile" to the functions of interest.
@@ -33,7 +34,7 @@ Authors
 
 Version
 -------
-    26 April 2020
+    02 Model 2020
 """
 
 import logging
@@ -57,7 +58,7 @@ class AquiferError(Error):
     pass
 
 
-# =========================================================
+# ---------------------------------------------------------
 class Model:
     """
     An Oneka-type analytic element model.
@@ -95,7 +96,7 @@ class Model:
         The y-coordinate of the local origin [m] for the regional flow
         component of the Oneka model.
 
-    coef : ndarray, shape=(6, ), dtype=float
+    coef : ndarray, shape=(6, ), dtype=float, optional.
         The six coefficient for the regional flow: A, B, C, D, E, F.
 
     Methods
@@ -177,11 +178,10 @@ class Model:
         self.porosity = porosity
         self.thickness = thickness
 
+        self.wells = wells
         self.xo = xo
         self.yo = yo
         self.coef = coef
-
-        self.wells = wells
 
     # ---------------------------------
     def __repr__(self):
@@ -390,42 +390,7 @@ class Model:
         return (Vx, Vy)
 
     # ---------------------------------
-    def compute_potential_fosm(self, elevation_ev, elevation_std):
-        """
-        Compute the avg and std of the discharge potential from the avg and std
-        of the elevation, using a first-order-second-moment approximation.
-
-        Parameters
-        ----------
-        elevation_ev : double
-            The expected value of the static water level elevation [m].
-
-        elevation_std : double
-            The standard deviation of the static water level elevation [m].
-
-        Returns
-        -------
-        potential_ev : double
-            The expected value of the discharge potential [m^3/d].
-
-        potential_std : double
-            The standard deviation of the discharge potential [m^3/d].
-        """
-
-        if elevation_ev < self.base:
-            raise RangeError("elevatio_to_head: elevation < base")
-        head = elevation_ev - self.base
-
-        if head < self.thickness:
-            potential_ev = (0.5*self.conductivity * (head**2 + elevation_std**2))
-            potential_std = self.conductivity * head * elevation_std
-        else:
-            potential_ev = (self.conductivity * self.thickness * (head - 0.5*self.thickness))
-            potential_std = self.conductivity * self.thickness * elevation_std
-        return (potential_ev, potential_std)
-
-    # ---------------------------------
-    def fit_coefficients(self, obs):
+    def fit_regional_flow(self, obs, xo=np.nan, yo=np.nan):
         """
         Set the regionalflow's origin to the cetroid of the obs, then
         fit the regionalflow's coefficient using weighted least squares.
@@ -441,10 +406,20 @@ class Model:
                     The y-coordinate of the observation [m].
 
                 z_ev : float
-                    The expected value of the observed static water level elevation [m].
+                    The expected value of the observed static water
+                    level elevation [m].
 
                 z_std : float
-                    The standard deviation of the observed static water level elevation [m].
+                    The standard deviation of the observed static water
+                    level elevation [m].
+
+        xo : float, optional
+            The x-coordinate of the local origin [m] for the regional flow
+            component of the Oneka model.
+
+        yo : float, optional
+            The y-coordinate of the local origin [m] for the regional flow
+            component of the Oneka model.
 
         Returns
         -------
@@ -459,34 +434,57 @@ class Model:
 
         Notes
         -----
-        o   The centroid of the observations is used as the orgin of
-            the regional flow.
+        o   If xo, yo are ommitted, the centroid of the observations is
+            used as the orgin of the regional flow.
 
         o   The caller should eliminate observations that are too
             close to pumping wells.
 
         o   No two observation can be at the same location. Duplicate
-            observation will cause a np.linalg.LinAlgError.
+            observations will cause a np.linalg.LinAlgError.
         """
 
+        # Initialize the coefficients to all 0's so that calls to
+        # compute_potential during fitting include the wells only.
         self.coef = np.zeros(6, )
 
-        xo = np.mean([ob[0] for ob in obs])
-        yo = np.mean([ob[1] for ob in obs])
+        # Set the local origin of the regional flow. In no origin is given
+        # in the arguments, then the centroid of the observations is used.
+        if np.isnan(xo) or np.isnan(yo):
+            xo = np.mean([ob[0] for ob in obs])
+            yo = np.mean([ob[1] for ob in obs])
 
+        self.xo = xo
+        self.yo = yo
+
+        # Preallocate space for the fitting arrays.
         nobs = len(obs)
         A = np.zeros([nobs, 6])
         b = np.zeros([nobs, 1])
         W = np.zeros([nobs, nobs])
 
+        # Set up the least sqaures problem.
         for i in range(nobs):
             x, y, z_ev, z_std = obs[i]
-            pot_ev, pot_std = self.compute_potential_fosm(z_ev, z_std)
+
+            # Compute the expected values and standard deviations of the
+            # discharge potentails at the observation locations using a
+            # first-order-second-moment approximation.
+            head = z_ev - self.base
+            if head >= self.thickness:
+                pot_ev = (self.conductivity * self.thickness * (head - 0.5*self.thickness))
+                pot_std = self.conductivity * self.thickness * z_std
+            elif head > 0:
+                pot_ev = (0.5*self.conductivity * (head**2 + z_std**2))
+                pot_std = self.conductivity * head * z_std
+            else:
+                raise RangeError("model.fit_coeficient: elevation < base")
 
             A[i, :] = [(x-xo)**2, (y-yo)**2, (x-xo)*(y-yo), (x-xo), (y-yo), 1]
             b[i] = pot_ev - self.compute_potential(x, y)
             W[i, i] = 1/pot_std
 
+        # Solve the least squares problem.
         WA = np.matmul(W, A)
         Wb = np.matmul(W, b)
 
@@ -504,8 +502,6 @@ class Model:
         AWWA = np.matmul(WA.T, WA)
         coef_cov = np.linalg.inv(AWWA)
 
-        self.xo = xo
-        self.yo = yo
         self.coef = coef_ev
 
         return(coef_ev, coef_cov)

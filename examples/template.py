@@ -20,7 +20,7 @@ from datetime import datetime
 import logging
 import time
 
-from nagadanpy.nagadan import nagadan
+from onekapy.oneka import oneka
 
 
 # ======================================
@@ -31,11 +31,12 @@ PROJECTNAME = '   example'
 TARGET =
 NPATHS = 500
 DURATION = 10*365.25
+NREALIZATIONS =
 
 BASE = 0.0
-CONDUCTIVITY =
-POROSITY =
-THICKNESS =
+C_DIST =
+P_DIST = 0.25
+T_DIST =
 
 BUFFER = 100
 SPACING = 10
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     logging.basicConfig(
-        filename='NagadanPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
+        filename='OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
         filemode='w',
         level=logging.INFO)
     log = logging.getLogger(__name__)
@@ -70,9 +71,9 @@ if __name__ == "__main__":
     log.info(' Run date: {0}'.format(time.asctime()))
 
     # Call the working function.
-    nagadan(
-        TARGET, NPATHS, DURATION,
-        BASE, CONDUCTIVITY, POROSITY, THICKNESS,
+    oneka(
+        TARGET, NPATHS, DURATION, NREALIZATIONS,
+        BASE, C_DIST, P_DIST, T_DIST,
         WELLS, OBSERVATIONS,
         BUFFER, SPACING, UMBRA,
         CONFINED, TOL, MAXSTEP)

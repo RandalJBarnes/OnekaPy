@@ -8,39 +8,18 @@ Classes
 Exceptions
 ----------
     Error
-    DistributionError
 
 Functions
 ---------
     compute_capturezone(
-            xy_start, duration, tol, maxstep,  nrealizations,
-            base, c_dist, p_dist, t_dist,
-            wellfield, observations,
-            spacing, umbra, confined) :
-        Run backtraces from all points xy_start using multiple
-        realizations of a random model. The results of the
-        realizations a collated and returned as a ProbabilityField.
+            xtarget, ytarget, rtarget, npaths, duration,
+            pfield, umbra, weight,
+            tol, maxstep, feval)
+        Compute the capture zone for the target well.
 
-    compute_basecase_capturezone(
-            target, minpaths, duration,
-            base, c_dist, p_dist, t_dist,
-            wellfield, observations,
-            spacing, umbra, confined, tol, maxstep):
-        Compute the capture zone for the target well using the expected
-        value of all stochastic quantities.
-
-    compute_backtrace(xys, duration, tol, maxstep, feval):
+    compute_backtrace(xys, duration, tol, maxstep, feval)
         Compute a single backtrace using the Dormand-Prince adaptive
         Runge-Kutta explicit solver.
-
-    generate_random_variate(arg) :
-        Generate a random variate from a dirac (constant), uniform,
-        or triangular distribution, depending on the argument tuple.
-
-    generate_basecase_variate(arg):
-        The mean value of a random variate from a dirac (constant),
-        uniform, or triangular distribution, depending on the argument
-        tuple.
 
 Notes
 -----
@@ -59,498 +38,120 @@ Authors
 
 Version
 -------
-    27 April 2020
+    02 May 2020
 """
 
 import logging
 import numpy as np
-import progressbar
-
-from model import Model, AquiferError
-from probabilityfield import ProbabilityField
-from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
-
 
 log = logging.getLogger(__name__)
 
 
-class Error(Exception):
-    """Base class for module errors."""
-    pass
-
-
-class DistributionError(Error):
-    """Invalid distribution."""
-    pass
-
-
-# -------------------------------------
+# ------------------------------------------------------------------------------
 def compute_capturezone(
-        target, minpaths, duration, nrealizations,
-        base, c_dist, p_dist, t_dist,
-        wellfield, observations,
-        spacing, umbra, confined, tol, maxstep):
+        xtarget, ytarget, rtarget, npaths, duration,
+        pfield, umbra, weight,
+        tol, maxstep, feval):
     """
-    Run backtraces from all points xy_start using multiple realizations of a
-    random model. The results of the realizations a collated and returned as
-    a ProbabilityField.
+    Compute the capture zone for the target well.
 
     Parameters
     ----------
-    target : int
-        The index identifying the target well in the wellfield.
-        That is, the well for which we will compute a stochastic
-        capture zone. This uses python's 0-based indexing.
+    xtarget : float
+        The x-coordinate of the target well [m].
 
-    minpaths : int
+    ytarget : float
+        The y-coordinate of the target well [m].
+
+    rtarget : float
+        The radius of the target well [m]. 0 < rtarget.
+
+    npaths : int
         The minimum number of paths (starting points for the backtraces)
-        to generate uniformly around the target well.
+        to generate uniformly around the target well. 0 < npaths.
 
     duration : float
         The duration of the capture zone [d]; e.g. a ten year capture zone
-        will have a duration = 10*365.25.
+        will have a duration = 10*365.25. 0 < duration.
 
-    tol : float
-        The tolerance [m] for the local error when solving the backtrace
-        differential equation. This is an inherent parameter for an
-        adaptive Runge-Kutta method.
+    pfield : probabilityfield
+        The auto-expanding, axis-aligned, grid-based probability field.
 
-    maxstep : float
-        The maximum allowed step in space [m] when solving the backtrace
-        differential equation. This is NOT the maximum time step.
-
-    nrealizations : int
-        The number of realizations of the random model.
-
-    base : float
-        The aquifer base elevation [m].
-
-    c_dist : scalar, pair, or triple
-        The distribution of the aquifer conductivity [m/d]:
-            scalar -> constant,
-            pair   -> (min, max) for a uniform distribution, or
-            triple -> (min, mode, max) for a triangular distribution.
-
-    p_dist : scalar, pair, or triple
-        The distribution of the aquifer porosity [.]:
-            scalar -> constant,
-            pair   -> (min, max) for a uniform distribution, or
-            triple -> (min, mode, max) for a triangular distribution.
-
-    t_dist : scalar, pair, or triple
-        The distribution of the aquifer thickness [m]:
-            scalar -> constant,
-            pair   -> (min, max) for a uniform distribution, or
-            triple -> (min, mode, max) for a triangular distribution.
-
-    wellfield : list of stochastic well tuples
-        A well tuple contains four values (sort of): (xw, yw, rw, qdist)
-            xw : float
-                The x-coordinate of the well [m].
-
-            yw : float
-                The y-coordinate of the well [m].
-
-            rw : float
-                The radius of the well [m].
-
-            q_dist : scalar, pair, or triple
-                The distribution of the well discharge. If
-                    scalar -> constant,
-                    pair -> (min, max) for a uniform distribution, or
-                    triple -> (min, mode, max) for a triangular distribution.
-
-    observations : list of observation tuples.
-        An observation tuple contains four values: (x, y, z_ev, z_std), where
-            x : float
-                The x-coordinate of the observation [m].
-            y : float
-                The y-coordinate of the observation [m].
-            z_ev : float
-                The expected value of the observed static water level elevation [m].
-            z_std : float
-                The standard deviation of the observed static water level elevation [m].
-
-    spacing : float
-        The spacing of the rows and the columns [m] in the square
-        ProbabilityField grids.
+    weight : float
+        The pseudo-probability associated with the capture zone.
 
     umbra : float
         The vector-to-raster range [m] when mapping a particle path onto
         the ProbabilityField grids. If a grid node is within umbra of a
         particle path, it is marked as visited.
 
-    confined : boolean
-        True if it is safe to assume that the aquifer is confined
-        throughout the domain of interest, False otherwise. This is a
-        speed kludge.
-
-    Returns
-    -------
-    capturezone : ProbabilityField
-        The probability filed resulting from the stochastic simulations.
-
-    Notes
-    -----
-    o   This is a time-consuming function.
-
-    o   We may be able to speed this up by parallelizing the backtrace
-        calls.
-    """
-
-    # Validate the arguments.
-    assert(isposint(minpaths))
-    assert(isposnumber(duration))
-    assert(isposint(nrealizations))
-
-    assert(isvaliddist(c_dist, 0, np.inf))
-    assert(isvaliddist(p_dist, 0, 1))
-    assert(isvaliddist(t_dist, 0, np.inf))
-
-    assert(isinstance(wellfield, list) and len(wellfield) >= 1)
-    for we in wellfield:
-        assert(len(we) == 4 and isnumber(we[0]) and isnumber(we[1]) and
-               isposnumber(we[2]) and isvaliddist(we[3], -np.inf, np.inf))
-    assert(isvalidindex(target, len(wellfield)))
-
-    assert(isinstance(observations, list) and len(observations) > 6)
-    for ob in observations:
-        assert(len(ob) == 4 and isnumber(ob[0]) and isnumber(ob[1]) and
-               isnumber(ob[2]) and isposnumber(ob[3]))
-
-    assert(isposnumber(spacing))
-    assert(isposnumber(umbra))
-    assert(isinstance(confined, bool))
-    assert(isposnumber(tol))
-    assert(isposnumber(maxstep))
-
-    # Local constants.
-    STEPAWAY = 1
-
-    # Initialize the progress bar.
-    bar = progressbar.ProgressBar(max_value=nrealizations)
-
-    # Setup the constellation of starting points.
-    xtarget, ytarget, rtarget = wellfield[target][0:3]
-
-    xy_start = []
-    theta = np.linspace(0, 2*np.pi, minpaths+1)[0:-1]
-    for a in theta:
-        x = (rtarget + STEPAWAY) * np.cos(a) + xtarget
-        y = (rtarget + STEPAWAY) * np.sin(a) + ytarget
-        xy_start.append((x, y))
-
-    # Initialize the probability field.
-    capturezone = ProbabilityField(spacing, spacing)
-
-    # Generate and register the capture zone realizations.
-    for i in range(nrealizations):
-
-        # Generate a realization of a random well field: fixed loations, random discharges.
-        wells = []
-        for w in wellfield:
-            xw, yw, rw = w[0:3]
-            qw = generate_random_variate(w[3])
-            wells.append([xw, yw, rw, qw])
-
-        # Generate a realization of random aquifer properties.
-        conductivity = generate_random_variate(c_dist)
-        porosity = generate_random_variate(p_dist)
-        thickness = generate_random_variate(t_dist)
-
-        # Create the model with the random components.
-        mo = Model(base, conductivity, porosity, thickness, wells)
-
-        # Generate the realizations for the regional flow ceofficients.
-        coef_ev, coef_cov = mo.fit_coefficients(observations)
-        mo.coef = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
-
-        # Log some basic information about the realization.
-        recharge = 2*(mo.coef[0] + mo.coef[1])
-        log.info(' Realization #{0:d}: {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.4e}'
-                 .format(i, base, conductivity, porosity, thickness, recharge))
-        log.info('     coef ev:  ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
-                 .format(coef_ev[0], coef_ev[1], coef_ev[2], coef_ev[3], coef_ev[4], coef_ev[5]))
-        log.info('     coef rng: ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
-                 .format(mo.coef[0], mo.coef[1], mo.coef[2], mo.coef[3], mo.coef[4], mo.coef[5]))
-
-        # Define the local backtracing velocity function.
-        if confined:
-            def feval(xy):
-                Vx, Vy = mo.compute_velocity_confined(xy[0], xy[1])
-                return np.array([-Vx, -Vy])
-        else:
-            def feval(xy):
-                Vx, Vy = mo.compute_velocity(xy[0], xy[1])
-                return np.array([-Vx, -Vy])
-
-        # Generate the base backtraces.
-        for k in range(len(theta)):
-            vertices = compute_backtrace(xy_start[k], duration, tol, maxstep, feval)
-            x = [v[0] for v in vertices]
-            y = [v[1] for v in vertices]
-            capturezone.rasterize(x, y, umbra)
-
-        """
-        # Generate infill backtraces as needed.
-        endpoints = []
-        endpoints.append((theta[k], vertices[-1][0], vertices[-1][1]))
-
-        endpoints.append((2*np.pi, endpoints[0][1], endpoints[0][2]))
-
-        k = 0
-        while k < len(endpoints)-1:
-            ta = endpoints[k][0]
-            xa = endpoints[k][1]
-            ya = endpoints[k][2]
-
-            tb = endpoints[k+1][0]
-            xb = endpoints[k+1][1]
-            yb = endpoints[k+1][2]
-
-            if (tb - ta > MIN_ANGLE and np.hypot(xb-xa, yb-ya) > MAX_DIST):
-                an = (tb + ta)/2
-                xn = (rtarget + STEPAWAY) * np.cos(an) + xtarget
-                yn = (rtarget + STEPAWAY) * np.sin(an) + ytarget
-                vertices, length = compute_backtrace((xn, yn), duration, tol, maxstep, feval)
-
-                x = [v[0] for v in vertices]
-                y = [v[1] for v in vertices]
-                capturezone.rasterize(x, y, umbra)
-
-                endpoints.insert(k+1, (an, xn, yn))
-                log.info('infill: ({0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f})'
-                         .format(an, xn, yn, tb-ta, np.hypot(xb-xa, yb-ya)))
-            else:
-                k = k+1
-        """
-
-        # Register the backtraces.
-        capturezone.register(1)
-
-        # Update the progress bar.
-        bar.update(i+1)
-
-    return capturezone
-
-
-# -------------------------------------
-def compute_basecase_capturezone(
-        target, minpaths, duration,
-        base, c_dist, p_dist, t_dist,
-        wellfield, observations,
-        spacing, umbra, confined, tol, maxstep):
-    """
-    Compute the capture zone for the target well using the mean
-    values of all stochastic quantities.
-
-    Parameters
-    ----------
-    target : int
-        The index identifying the target well in the wellfield.
-        That is, the well for which we will compute a stochastic
-        capture zone. This uses python's 0-based indexing.
-
-    minpaths : int
-        The minimum number of paths (starting points for the backtraces)
-        to generate uniformly around the target well.
-
-    duration : float
-        The duration of the capture zone [d]; e.g. a ten year capture zone
-        will have a duration = 10*365.25.
-
     tol : float
         The tolerance [m] for the local error when solving the backtrace
         differential equation. This is an inherent parameter for an
-        adaptive Runge-Kutta method.
+        adaptive Runge-Kutta method. 0 < tol.
 
     maxstep : float
         The maximum allowed step in space [m] when solving the backtrace
-        differential equation. This is NOT the maximum time step.
+        differential equation. This is NOT the maximum time step. 0 < maxstep.
 
-    base : float
-        The aquifer base elevation [m].
-
-    c_dist : scalar, pair, or triple
-        The distribution of the aquifer conductivity [m/d]:
-            scalar -> constant,
-            pair   -> (min, max) for a uniform distribution, or
-            triple -> (min, mode, max) for a triangular distribution.
-
-    p_dist : scalar, pair, or triple
-        The distribution of the aquifer porosity [.]:
-            scalar -> constant,
-            pair   -> (min, max) for a uniform distribution, or
-            triple -> (min, mode, max) for a triangular distribution.
-
-    t_dist : scalar, pair, or triple
-        The distribution of the aquifer thickness [m]:
-            scalar -> constant,
-            pair   -> (min, max) for a uniform distribution, or
-            triple -> (min, mode, max) for a triangular distribution.
-
-    wellfield : list of stochastic well tuples
-        A well tuple contains four values (sort of): (xw, yw, rw, qdist)
-            xw : float
-                The x-coordinate of the well [m].
-
-            yw : float
-                The y-coordinate of the well [m].
-
-            rw : float
-                The radius of the well [m].
-
-            q_dist : scalar, pair, or triple
-                The distribution of the well discharge. If
-                    scalar -> constant,
-                    pair -> (min, max) for a uniform distribution, or
-                    triple -> (min, mode, max) for a triangular distribution.
-
-    observations : list of observation tuples.
-        An observation tuple contains four values: (x, y, z_ev, z_std), where
-            x : float
-                The x-coordinate of the observation [m].
-            y : float
-                The y-coordinate of the observation [m].
-            z_ev : float
-                The expected value of the observed static water level elevation [m].
-            z_std : float
-                The standard deviation of the observed static water level elevation [m].
-
-    spacing : float
-        The spacing of the rows and the columns [m] in the square
-        ProbabilityField grids.
-
-    umbra : float
-        The vector-to-raster range [m] when mapping a particle path onto
-        the ProbabilityField grids. If a grid node is within umbra of a
-        particle path, it is marked as visited.
-
-    confined : boolean
-        True if it is safe to assume that the aquifer is confined
-        throughout the domain of interest, False otherwise. This is a
-        speed kludge.
+    feval : function
+        The backtracing velocity function: [Vx, Vy] = feval(x, y).
 
     Returns
     -------
-    capturezone : ProbabilityField
-        The probability filed resulting from the stochastic simulations.
+    None.
 
     Notes
     -----
-    o   The input parameters for compute_basecase_capturezone are identical
-        to those for compute_capturezone --- except, there is no nrealizations
-        argument.
+    o   This capture zone is not stochastic.
     """
-    # Validate the arguments.
-    assert(isposint(minpaths))
-    assert(isposnumber(duration))
-
-    assert(isvaliddist(c_dist, 0, np.inf))
-    assert(isvaliddist(p_dist, 0, 1))
-    assert(isvaliddist(t_dist, 0, np.inf))
-
-    assert(isinstance(wellfield, list) and len(wellfield) >= 1)
-    for we in wellfield:
-        assert(len(we) == 4 and isnumber(we[0]) and isnumber(we[1]) and
-               isposnumber(we[2]) and isvaliddist(we[3], -np.inf, np.inf))
-    assert(isvalidindex(target, len(wellfield)))
-
-    assert(isinstance(observations, list) and len(observations) > 6)
-    for ob in observations:
-        assert(len(ob) == 4 and isnumber(ob[0]) and isnumber(ob[1]) and
-               isnumber(ob[2]) and isposnumber(ob[3]))
-
-    assert(isposnumber(spacing))
-    assert(isposnumber(umbra))
-    assert(isinstance(confined, bool))
-    assert(isposnumber(tol))
-    assert(isposnumber(maxstep))
 
     # Local constants.
-    STEPAWAY = 1
+    STEPAWAY = 1.0              # Distance beyond the well radius [m].
 
-    # Setup the constellation of starting points.
-    xtarget, ytarget, rtarget = wellfield[target][0:3]
+    # Compute the backtraces.
+    for theta in np.linspace(0, 2*np.pi, npaths+1)[0:-1]:
+        xs = (rtarget + STEPAWAY) * np.cos(theta) + xtarget
+        ys = (rtarget + STEPAWAY) * np.sin(theta) + ytarget
 
-    xy_start = []
-    theta = np.linspace(0, 2*np.pi, minpaths+1)[0:-1]
-    for a in theta:
-        x = (rtarget + STEPAWAY) * np.cos(a) + xtarget
-        y = (rtarget + STEPAWAY) * np.sin(a) + ytarget
-        xy_start.append((x, y))
-
-    # Initialize the probability field.
-    capturezone = ProbabilityField(spacing, spacing)
-
-    # Generate a realization of a random well field: fixed loations, random discharges.
-    wells = []
-    for w in wellfield:
-        xw, yw, rw,  = w[0:3]
-        qw = generate_basecase_variate(w[3])
-        wells.append([xw, yw, rw, qw])
-
-    # Generate a realization of random aquifer properties.
-    conductivity = generate_basecase_variate(c_dist)
-    porosity = generate_basecase_variate(p_dist)
-    thickness = generate_basecase_variate(t_dist)
-
-    # Create the model with the random components.
-    mo = Model(base, conductivity, porosity, thickness, wells)
-
-    # Generate the realizations for the regional flow ceofficients.
-    coef_ev, coef_cov = mo.fit_coefficients(observations)
-    mo.coef = coef_ev
-
-    # Define the local backtracing velocity function.
-    if confined:
-        def feval(xy):
-            Vx, Vy = mo.compute_velocity_confined(xy[0], xy[1])
-            return np.array([-Vx, -Vy])
-    else:
-        def feval(xy):
-            Vx, Vy = mo.compute_velocity(xy[0], xy[1])
-            return np.array([-Vx, -Vy])
-
-    # Generate the base backtraces.
-    for k in range(len(theta)):
-        vertices = compute_backtrace(xy_start[k], duration, tol, maxstep, feval)
+        vertices = compute_backtrace(xs, ys, duration, tol, maxstep, feval)
         x = [v[0] for v in vertices]
         y = [v[1] for v in vertices]
-        capturezone.rasterize(x, y, umbra)
+        pfield.rasterize(x, y, umbra)
 
     # Register the backtraces.
-    capturezone.register(1)
-
-    return capturezone
+    pfield.register(weight)
 
 
 # -------------------------------------
-def compute_backtrace(xys, duration, tol, maxstep, feval):
+def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
     """
     Compute a single backtrace using the Dormand-Prince adaptive
     Runge-Kutta explicit solver.
 
     Parameters
     ----------
-    xys : (float, float)
-        The (x-coordinate, y-coordinate) [m] of the starting point.
+    xs : float
+        The x-coordinate [m] of the starting point.
+
+    ys : float
+        The y-coordinate [m] of the starting point.
 
     duration : float
         The duration of the capture zone [d]; e.g. a ten year capture zone
-        will have a duration = 10*365.25.
+        will have a duration = 10*365.25. 0 < duration.
 
     tol : float
         The tolerance [m] for the local error when solving the backtrace
         differential equation. This is an inherent parameter for an
-        adaptive Runge-Kutta method.
+        adaptive Runge-Kutta method. 0 < tol.
 
     maxstep : float
         The maximum allowed step in space [m] when solving the backtrace
-        differential equation. This is NOT the maximum time step.
+        differential equation. 0 < maxstep.
 
     feval : function
-        The backtracing velocity function.
+        The backtracing velocity function: [Vx, Vy] = feval(x, y).
 
     Returns
     -------
@@ -610,8 +211,8 @@ def compute_backtrace(xys, duration, tol, maxstep, feval):
     t = 0
     dt = 0.1                # This is an arbitrary choice.
 
-    vertices = [xys]
-    xy = np.array([xys[0], xys[1]])
+    vertices = [(xs, ys)]
+    xy = np.array([xs, ys])
 
     try:
         k1 = feval(xy)
@@ -644,81 +245,8 @@ def compute_backtrace(xys, duration, tol, maxstep, feval):
 
             dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
 
-    except AquiferError:
+    except:
         log.warning(' trace terminated prematurely at t = {0:.2f} < duration.'.format(t))
 
     finally:
         return vertices
-
-
-# -------------------------------------
-def generate_random_variate(arg):
-    """
-    Generate a random variate from a dirac (constant), uniform, or triangular
-    distribution, depending on the argument tuple.
-
-    Parameters
-    ----------
-    arg : scalar, pair, or triple
-        scalar -> constant,
-        pair -> (min, max) for a uniform distribution, or
-        triple -> (min, mode, max) for a triangular distribution.
-
-    Raises
-    ------
-    TypeError
-        <arg> must be a scalar, pair, or triple.
-
-    Returns
-    -------
-    value : float
-        A random variate from the specified distribution.
-    """
-
-    if type(arg) is not tuple:
-        value = arg
-    elif len(arg) == 2:
-        value = np.random.uniform(arg[0], arg[1])
-    elif len(arg) == 3:
-        value = np.random.triangular(arg[0], arg[1], arg[2])
-    else:
-        raise DistributionError('<arg> must be a scalar, pair, or triple.')
-
-    return value
-
-
-# -------------------------------------
-def generate_basecase_variate(arg):
-    """
-    The mean value of a random variate from a dirac (constant),
-    uniform, or triangular distribution, depending on the argument
-    tuple.
-
-    Parameters
-    ----------
-    arg : scalar, pair, or triple
-        scalar -> constant,
-        pair -> (min, max) for a uniform distribution, or
-        triple -> (min, mode, max) for a triangular distribution.
-
-    Raises
-    ------
-    TypeError
-        <arg> must be a scalar, pair, or triple.
-
-    Returns
-    -------
-    value : float
-        The mean value of the specified distribution.
-    """
-
-    if type(arg) is not tuple:
-        value = arg
-    elif len(arg) == 2:
-        value = (arg[0] + arg[1])/2
-    elif len(arg) == 3:
-        value = (arg[0] + arg[1] + arg[2])/3
-    else:
-        raise DistributionError('<arg> must be a scalar, pair, or triple.')
-
-    return value

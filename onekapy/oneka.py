@@ -11,18 +11,28 @@ Exceptions
 
 Functions
 ---------
-    oneka
+    oneka(
+            target, npaths, duration, nrealizations,
+            base, c_dist, p_dist, t_dist,
+            wellfield, observations,
+            buffer=100, spacing=10, umbra=10,
+            confined=True, tol=1, maxstep=10)
         The entry-point for the OnekaPy project. As currently written,
         this driver computes and plots the stochastic capture zone.
 
-    filter_obs(observations, wells, buffer):
+    filter_obs(observations, wellfield, buffer)
         Partition the obs into retained and removed. An observation is
         removed if it is within buffer of a well. Duplicate observations
         (i.e. obs at the same loction) are average using a minimum
         variance weighted average.
 
-    log_banner()
-        Sends a program banner to the log file.
+    log_the_run(
+            target, npaths, duration, nrealizations,
+            base, c_dist, p_dist, t_dist,
+            wellfield, observations,
+            buffer, spacing, umbra,
+            confined, tol, maxstep)
+        Print the banner and run information to the log file.
 
 Notes
 -----
@@ -46,26 +56,25 @@ Authors
 
 Version
 -------
-    27 April 2020
+    02 May 2020
 """
 
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 
-from capturezone import compute_capturezone, compute_basecase_capturezone
-from utility import isnumber, isposnumber, isposint, isvalidindex, isvaliddist
+from onekapy.probabilityfield import ProbabilityField
+from onekapy.stochastic import compute_stochastic_capturezone, isdistribution
 
 
 log = logging.getLogger(__name__)
 
-VERSION = '27 April 2020'
+VERSION = '02 May 2020'
 
 
-# -----------------------------------------------
+# ------------------------------------------------------------------------------
 def oneka(
-        target, minpaths, duration, nrealizations,
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         buffer=100, spacing=10, umbra=10,
@@ -81,7 +90,7 @@ def oneka(
         That is, the well for which we will compute a stochastic
         capture zone. This uses python's 0-based indexing.
 
-    minpaths : int
+    npaths : int
         The minimum number of paths (starting points for the backtraces)
         to generate uniformly around the target well.
 
@@ -172,66 +181,47 @@ def oneka(
 
     Notes
     -----
-    o The following steps are carried out for each realization.
-
-        (1) Generate a new set of random well discharges. The
-            locations are fixed, but the discharges may be random.
-
-        (2) Generate a new set of random aquifer properties:
-            conductivity, porosity, and thickness.
-
-        (3) Fit the model to the observations to determine the
-            expected value vector and covariance matrix of the six
-            regional flow parameters, A - F.
-
-        (4) Generate the regional flow parameters as a realization
-            of a multivariate normal distribution using the expected
-            value vector and covariance matrix generated in step (3).
-
-        (5) Generate and backtrack minpaths of particles uniformly
-            distributed around the target well.
-
-        (6) Infill additional paths where necessary.
-
-        (7) Chronicle the particle traces in the ProbabilityField
-            grid.
-
     o Most of the work outlined above is orchestrated by the
       create_capturezone function.
     """
 
-    # Validate the arguments. This is minimal validation, but it
-    # should catch the typos and simple tranpositional errors.
-    assert(isposint(minpaths))
-    assert(isposnumber(duration))
-    assert(isposint(nrealizations))
+    # Validate the arguments.
+    assert(isinstance(target, int) and 0 <= target < len(wellfield))
+    assert(isinstance(npaths, int) and 0 < npaths)
+    assert((isinstance(duration, int) or isinstance(duration, float)) and 0 < duration)
 
-    assert(isvaliddist(c_dist, 0, np.inf))
-    assert(isvaliddist(p_dist, 0, 1))
-    assert(isvaliddist(t_dist, 0, np.inf))
+    assert(isinstance(base, int) or isinstance(base, float))
+    assert(isdistribution(c_dist, 0, np.inf))
+    assert(isdistribution(p_dist, 0, 1))
+    assert(isdistribution(t_dist, 0, np.inf))
 
     assert(isinstance(wellfield, list) and len(wellfield) >= 1)
     for we in wellfield:
-        assert(len(we) == 4 and isnumber(we[0]) and isnumber(we[1]) and
-               isposnumber(we[2]) and isvaliddist(we[3], -np.inf, np.inf))
-    assert(isvalidindex(target, len(wellfield)))
+        assert(len(we) == 4 and
+               (isinstance(we[0], int) or isinstance(we[0], float)) and
+               (isinstance(we[1], int) or isinstance(we[1], float)) and
+               (isinstance(we[2], int) or isinstance(we[2], float)) and 0 < we[2] and
+               isdistribution(we[3], -np.inf, np.inf))
 
     assert(isinstance(observations, list) and len(observations) > 6)
     for ob in observations:
-        assert(len(ob) == 4 and isnumber(ob[0]) and isnumber(ob[1]) and
-               isnumber(ob[2]) and isposnumber(ob[3]))
+        assert(len(ob) == 4 and
+               (isinstance(ob[0], int) or isinstance(ob[0], float)) and
+               (isinstance(ob[1], int) or isinstance(ob[1], float)) and
+               (isinstance(ob[2], int) or isinstance(ob[2], float)) and
+               (isinstance(ob[3], int) or isinstance(ob[3], float)) and 0 <= ob[3])
 
-    assert(isposnumber(buffer))
-    assert(isposnumber(spacing))
-    assert(isposnumber(umbra))
+    assert((isinstance(buffer, int) or isinstance(buffer, float)) and 0 < buffer)
+    assert((isinstance(spacing, int) or isinstance(spacing, float)) and 0 < spacing)
+    assert((isinstance(umbra, int) or isinstance(umbra, float)) and 0 < umbra)
 
     assert(isinstance(confined, bool))
-    assert(isposnumber(tol))
-    assert(isposnumber(maxstep))
+    assert((isinstance(tol, int) or isinstance(tol, float)) and 0 < tol)
+    assert((isinstance(maxstep, int) or isinstance(maxstep, float)) and 0 < maxstep)
 
     # Log the run information.
     log_the_run(
-        target, minpaths, duration, nrealizations,
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         buffer, spacing, umbra,
@@ -241,26 +231,18 @@ def oneka(
     obs = filter_obs(observations, wellfield, buffer)
     assert(len(obs) > 6)
 
-    # Compute the capture zone for the target well.
-    if nrealizations <= 1:
-        # Base case only.
-        cz = compute_basecase_capturezone(
-            target, minpaths, duration,
-            base, c_dist, p_dist, t_dist,
-            wellfield, obs,
-            spacing, umbra, confined, tol, maxstep)
-    else:
-        # Compute the stochasitc capture zone.
-        start_time = time.time()
+    # Initialize the probability field.
+    xtarget, ytarget, rtarget = wellfield[target][0:3]
+    cz = ProbabilityField(spacing, spacing, xtarget, ytarget)
 
-        cz = compute_capturezone(
-            target, minpaths, duration, nrealizations,
-            base, c_dist, p_dist, t_dist,
-            wellfield, obs,
-            spacing, umbra, confined, tol, maxstep)
-
-        stop_time = time.time()
-        print('\n\ncompute_capturezone time = {0:.1f} seconds'.format(stop_time-start_time))
+    # Compute the stochastic capture zone for the target well.
+    compute_stochastic_capturezone(
+        xtarget, ytarget, rtarget,
+        npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        wellfield, obs,
+        cz, umbra, confined,
+        tol, maxstep)
 
     # Make the probability contour plot.
     plt.figure()
@@ -274,8 +256,21 @@ def oneka(
         plt.contourf(X, Y, Z, np.linspace(0, 1, 11), cmap='tab10')
         plt.colorbar(ticks=np.linspace(0, 1, 11))
         plt.contour(X, Y, Z, np.linspace(0, 1, 11), colors=['black'])
+
+        plt.xlabel('UTM Easting [m]')
+        plt.ylabel('UTM Northing [m]')
+        plt.title('{0} Realizations, {1} Paths, Duration = {2:.1f} days'
+                  .format(nrealizations, npaths, duration), fontsize=20)
+        plt.grid(True)
+
     else:
         log.warning(' There were no valid realizations.')
+
+    plot_locations(plt, target, wellfield, obs)
+
+
+# ------------------------------------------------------------------------------
+def plot_locations(plt, target, wellfield, obs):
 
     # Plot the wells as o markers.
     xw = [we[0] for we in wellfield]
@@ -291,13 +286,9 @@ def oneka(
     yo = [ob[1] for ob in obs]
     plt.plot(xo, yo, 'P', markeredgecolor='k', markerfacecolor='w')
 
-    plt.show()
 
-    return cz
-
-
-# -------------------------------------
-def filter_obs(observations, wells, buffer):
+# ------------------------------------------------------------------------------
+def filter_obs(observations, wellfield, buffer):
     """
     Partition the obs into retained and removed. An observation is
     removed if it is within buffer of a well. Duplicate observations
@@ -314,7 +305,7 @@ def filter_obs(observations, wells, buffer):
             y : float
                 The y-coordinate of the observation [m].
 
-    wells : list
+    wellfield : list
         A list of well tuples where the first two fields of the
         tuples are xw and yw:
             xw : float
@@ -346,18 +337,18 @@ def filter_obs(observations, wells, buffer):
         https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
     """
 
-    # Remove all observations that are too close to pumping wells.
+    # Remove all observations that are too close to pumping wellfield.
     obs = []
     for ob in observations:
         flag = True
-        for we in wells:
+        for we in wellfield:
             if np.hypot(ob[0]-we[0], ob[1]-we[1]) <= buffer:
                 flag = False
                 break
         if flag:
             obs.append(ob)
         else:
-            log.info(' observation removed: {0}'.format(ob))
+            log.info('observation removed: {0}'.format(ob))
 
     # Replace any duplicate observations with their weighted average.
     # Assume that the duplicate errors are statistically independent.
@@ -376,7 +367,7 @@ def filter_obs(observations, wells, buffer):
             for k in range(i, j):
                 num += obs[k][2]/obs[k][3]**2
                 den += 1/obs[k][3]**2
-                log.info(' duplicate observation: {0}'.format(obs[k]))
+                log.info('duplicate observation: {0}'.format(obs[k]))
             retained_obs.append((obs[i][0], obs[i][1], num/den, np.sqrt(1/den)))
         else:
             retained_obs.append(obs[i])
@@ -389,9 +380,9 @@ def filter_obs(observations, wells, buffer):
     return retained_obs
 
 
-# -------------------------------------
+# ------------------------------------------------------------------------------
 def log_the_run(
-        target, minpaths, duration, nrealizations,
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         wellfield, observations,
         buffer, spacing, umbra,
@@ -409,7 +400,7 @@ def log_the_run(
     log.info('                                                   ')
 
     log.info(' target        = {0:d}'.format(target))
-    log.info(' minpaths      = {0:d}'.format(minpaths))
+    log.info(' npaths        = {0:d}'.format(npaths))
     log.info(' duration      = {0:.2f}'.format(duration))
     log.info(' nrealizations = {0:d}'.format(nrealizations))
     log.info(' base          = {0:.2f}'.format(base))
@@ -423,12 +414,14 @@ def log_the_run(
     log.info(' tol           = {0:.2f}'.format(tol))
     log.info(' maxstep       = {0:.2f}'.format(maxstep))
 
+    log.info('\n')
     log.info(' wellfield: {0}'.format(len(wellfield)))
     for we in wellfield:
         log.info('     {0}'.format(we))
 
+    log.info('\n')
     log.info(' observations: {0}'.format(len(observations)))
     for ob in observations:
         log.info('     {0}'.format(ob))
 
-    log.info(' ')
+    log.info('\n')

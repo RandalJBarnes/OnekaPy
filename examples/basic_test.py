@@ -1,20 +1,26 @@
 """
-A basic manufactured example driver file for OnekaPy.
+
+
+Authors
+-------
+    Dr. Randal J. Barnes
+    Department of Civil, Environmental, and Geo- Engineering
+    University of Minnesota
+
+    Richard Soule
+    Source Water Protection
+    Minnesota Department of Health
 
 Version
 -------
-    26 April 2020
+    02 May 2020
 """
 
 from datetime import datetime
 import logging
 import time
 
-import cProfile
-import pstats
-from pstats import SortKey
-
-from oneka import oneka
+from onekapy.oneka import oneka
 
 
 # ======================================
@@ -23,14 +29,22 @@ from oneka import oneka
 PROJECTNAME = 'ex_Basic example'
 
 TARGET = 0
-MINPATHS = 25
+NPATHS = 25
 DURATION = 10*365.25
-NREALIZATIONS = 25
+NREALIZATIONS = 20
 
 BASE = 0.0
-C_DIST = (5.0, 10.0, 25.0)
-T_DIST = (10.0, 15.0, 20.0)
+C_DIST = (10.0, 20.0, 30.0)
 P_DIST = (0.20, 0.25)
+T_DIST = (10.0, 15.0, 20.0)
+
+BUFFER = 100
+SPACING = 10
+UMBRA = 10
+
+CONFINED = True
+TOL = 1
+MAXSTEP = 20
 
 WELLFIELD = [
     (2250, 2250, 0.25, (600, 750, 900)),
@@ -65,24 +79,17 @@ OBSERVATIONS = [
     (3000, 3000, 100, 2)
     ]
 
-BUFFER = 100
-SPACING = 10
-UMBRA = 10
-
-CONFINED = True
-TOL = 1
-MAXSTEP = 20
-
-
 # ======================================
 # Here is the form of the base call.
 # ======================================
-def main():
+if __name__ == "__main__":
+    # execute only if run as a script
+
     # Initialize the run.
     start_time = time.time()
 
     logging.basicConfig(
-        filename='..\\logs\\OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
+        filename='OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log',
         filemode='w',
         level=logging.INFO)
     log = logging.getLogger(__name__)
@@ -92,7 +99,7 @@ def main():
 
     # Call the working function.
     oneka(
-        TARGET, MINPATHS, DURATION, NREALIZATIONS,
+        TARGET, NPATHS, DURATION, NREALIZATIONS,
         BASE, C_DIST, P_DIST, T_DIST,
         WELLFIELD, OBSERVATIONS,
         BUFFER, SPACING, UMBRA,
@@ -103,22 +110,4 @@ def main():
     log.info('Total elapsed time = %.4f seconds' % elapsedtime)
     logging.shutdown()
 
-    print('\nTotal elapsed time = %.4f seconds' % elapsedtime)
-
-
-# -------------------------------------
-def profile_me():
-    pr = cProfile.Profile()
-    pr.enable()
-    main()
-    pr.disable()
-
-    p = pstats.Stats(pr)
-    p.strip_dirs()
-    p.sort_stats(SortKey.TIME).print_stats(10)
-
-
-# -------------------------------------
-if __name__ == "__main__":
-    # execute only if run as a script
-    main()
+    print('\n\nTotal elapsed time = %.4f seconds' % elapsedtime)
