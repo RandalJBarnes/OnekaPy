@@ -39,7 +39,7 @@ CONFINED = True
 TOL = 1
 MAXSTEP = 20
 
-WELLS = [(0.0, 0.0, 0.2, 312.0)]
+WELLFIELD = [(0.0, 0.0, 0.2, 312.0)]
 
 OBSERVATIONS = [
     (-857, -737, 306.02, 1.62),
