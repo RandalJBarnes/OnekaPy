@@ -56,7 +56,7 @@ Authors
 
 Version
 -------
-    02 May 2020
+    07 May 2020
 """
 
 import logging

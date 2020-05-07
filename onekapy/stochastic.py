@@ -44,7 +44,7 @@ Authors
 
 Version
 -------
-    27 April 2020
+    07 May 2020
 """
 
 import logging
@@ -231,15 +231,16 @@ def compute_stochastic_capturezone(
 
         # Generate the realizations for the regional flow ceofficients.
         coef_ev, coef_cov = mo.fit_regional_flow(obs, xtarget, ytarget)
+        coef_ev = np.reshape(coef_ev, [6, ])
         mo.coef = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
 
         # Log some basic information about the realization.
         recharge = 2*(mo.coef[0] + mo.coef[1])
-        log.info(' Realization #{0:d}: {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.4e}'
+        log.info('Realization #{0:d}: {1:.2f}, {2:.2f}, {3:.2f}, {4:.2f}, {5:.4e}'
                  .format(i, base, conductivity, porosity, thickness, recharge))
-        log.info('     coef ev:  ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
+        log.info('    coef ev:  ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
                  .format(coef_ev[0], coef_ev[1], coef_ev[2], coef_ev[3], coef_ev[4], coef_ev[5]))
-        log.info('     coef rng: ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
+        log.info('    coef rng: ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
                  .format(mo.coef[0], mo.coef[1], mo.coef[2], mo.coef[3], mo.coef[4], mo.coef[5]))
 
         # Define the local backtracing velocity function.
