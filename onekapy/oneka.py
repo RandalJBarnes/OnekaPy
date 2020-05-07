@@ -65,9 +65,9 @@ import numpy as np
 
 from onekapy.probabilityfield import ProbabilityField
 from onekapy.stochastic import compute_stochastic_capturezone, isdistribution
+from onekapy.utilities import contour_head, filter_obs, summary_statistics
 
-
-log = logging.getLogger(__name__)
+log = logging.getLogger('OnekaPy')
 
 VERSION = '02 May 2020'
 
@@ -268,6 +268,7 @@ def oneka(
 
     plot_locations(plt, target, wellfield, obs)
 
+    plt.show()
 
 # ------------------------------------------------------------------------------
 def plot_locations(plt, target, wellfield, obs):
@@ -278,106 +279,13 @@ def plot_locations(plt, target, wellfield, obs):
     plt.plot(xw, yw, 'o', markeredgecolor='k', markerfacecolor='w')
 
     # Plot the target well as a star marker.
-    xtarget, ytarget, rtarget = wellfield[target][0:3]
+    xtarget, ytarget = wellfield[target][0:2]
     plt.plot(xtarget, ytarget, '*', markeredgecolor='k', markerfacecolor='w', markersize=12)
 
     # Plot the retained observations as fat + markers.
     xo = [ob[0] for ob in obs]
     yo = [ob[1] for ob in obs]
     plt.plot(xo, yo, 'P', markeredgecolor='k', markerfacecolor='w')
-
-
-# ------------------------------------------------------------------------------
-def filter_obs(observations, wellfield, buffer):
-    """
-    Partition the obs into retained and removed. An observation is
-    removed if it is within buffer of a well. Duplicate observations
-    (i.e. obs at the same loction) are average using a minimum
-    variance weighted average.
-
-    Parameters
-    ----------
-    observations : list
-        A list of observation tuples where the first two fields
-        are x and y:
-            x : float
-                The x-coordinate of the observation [m].
-            y : float
-                The y-coordinate of the observation [m].
-
-    wellfield : list
-        A list of well tuples where the first two fields of the
-        tuples are xw and yw:
-            xw : float
-                The x-coordinate of the well [m].
-
-            yw : float
-                The y-coordinate of the well [m].
-
-        Note: the well tuples may have other fields, but the first
-        two must be xw and yw.
-
-    buffer : float
-        The buffer distance [m] around each well. If an obs falls
-        within buffer of any well, it is removed.
-
-    Returns
-    -------
-    retained_obs : list
-        A list of the retained observations. The fields are the
-        same as those in obs. These include averaged duplicates.
-
-    Notes
-    -----
-    o   Duplicate observations are averaged and the associated
-        standard deviation is updated to reflect this. We use a
-        weighted average, with the weight for the i'th obs
-        proportional to 1/sigma^2_i. This is the minimum variance
-        estimator. See, for example,
-        https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-    """
-
-    # Remove all observations that are too close to pumping wellfield.
-    obs = []
-    for ob in observations:
-        flag = True
-        for we in wellfield:
-            if np.hypot(ob[0]-we[0], ob[1]-we[1]) <= buffer:
-                flag = False
-                break
-        if flag:
-            obs.append(ob)
-        else:
-            log.info('observation removed: {0}'.format(ob))
-
-    # Replace any duplicate observations with their weighted average.
-    # Assume that the duplicate errors are statistically independent.
-    obs.sort()
-    retained_obs = []
-
-    i = 0
-    while i < len(obs):
-        j = i+1
-        while (j < len(obs)) and (np.hypot(obs[i][0]-obs[j][0], obs[i][1]-obs[j][1]) < 1):
-            j += 1
-
-        if j-i > 1:
-            num = 0
-            den = 0
-            for k in range(i, j):
-                num += obs[k][2]/obs[k][3]**2
-                den += 1/obs[k][3]**2
-                log.info('duplicate observation: {0}'.format(obs[k]))
-            retained_obs.append((obs[i][0], obs[i][1], num/den, np.sqrt(1/den)))
-        else:
-            retained_obs.append(obs[i])
-        i = j
-
-    log.info('active observations: {0}'.format(len(retained_obs)))
-    for ob in retained_obs:
-        log.info('     {0}'.format(ob))
-
-    return retained_obs
 
 
 # ------------------------------------------------------------------------------
@@ -388,16 +296,16 @@ def log_the_run(
         buffer, spacing, umbra,
         confined, tol, maxstep):
 
-    log.info('                                                   ')
-    log.info(' ==================================================')
-    log.info('  OOOOOO NN   N EEEEEE K   KK AAAAAA PPPPPP Y    Y ')
-    log.info('  O    O N N  N E      K KK   A    A P    P  Y  Y  ')
-    log.info('  O    O N  N N EEEEE  KK     AAAAAA PPPPPP   YY   ')
-    log.info('  O    O N   NN E      K KK   A    A P        Y    ')
-    log.info('  OOOOOO N    N EEEEEE K   KK A    A P        Y    ')
-    log.info(' ==================================================')
+    log.info('')
+    log.info(' ========================================================')
+    log.info('  OOOOOO  NN   N  EEEEEE  K   KK  AAAAAA  PPPPPP  Y    Y ')
+    log.info('  O    O  N N  N  E       K KK    A    A  P    P   Y  Y  ')
+    log.info('  O    O  N  N N  EEEEE   KK      AAAAAA  PPPPPP    YY   ')
+    log.info('  O    O  N   NN  E       K KK    A    A  P         Y    ')
+    log.info('  OOOOOO  N    N  EEEEEE  K   KK  A    A  P         Y    ')
+    log.info(' ========================================================')
     log.info(' Version: {0}'.format(VERSION))
-    log.info('                                                   ')
+    log.info('')
 
     log.info(' target        = {0:d}'.format(target))
     log.info(' npaths        = {0:d}'.format(npaths))
