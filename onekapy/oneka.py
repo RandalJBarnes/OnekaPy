@@ -59,6 +59,7 @@ Version
     07 May 2020
 """
 
+from datetime import datetime
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -259,8 +260,7 @@ def oneka(
 
         plt.xlabel('UTM Easting [m]')
         plt.ylabel('UTM Northing [m]')
-        plt.title('{0} Realizations, {1} Paths, Duration = {2:.1f} days'
-                  .format(nrealizations, npaths, duration), fontsize=20)
+        plt.title('{0}, {1}, {2:.1f}'.format(nrealizations, npaths, duration), fontsize=18)
         plt.grid(True)
 
     else:
@@ -268,6 +268,8 @@ def oneka(
 
     plot_locations(plt, target, wellfield, obs)
 
+    fname='logs\\OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.pdf'
+    plt.savefig(fname)
     plt.show()
 
 # ------------------------------------------------------------------------------
