@@ -3,13 +3,13 @@ Defines and implements an Oneka-type analytic element model.
 
 Classes
 -------
-    Model
+Model
 
 Exceptions
 ----------
-    Error
-    RangeError
-    AquiferError
+Error
+RangeError
+AquiferError
 
 Notes
 -----
@@ -24,23 +24,23 @@ o   How to line-by-line profile:
 
 Authors
 -------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
+Richard Soule
+Source Water Protection
+Minnesota Department of Health
 
 Version
 -------
-    07 Model 2020
+11 Model 2020
 """
 
 import logging
 import numpy as np
 
-log = logging.getLogger('OnekaPy')
+log = logging.getLogger('Oneka')
 
 
 class Error(Exception):
@@ -133,8 +133,8 @@ class Model:
         """
         Initializes all of the attributes for a Model object.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         base : float
             The base elevation of the aquifer [m].
 
@@ -208,8 +208,8 @@ class Model:
         """
         Compute the discharge potential [m^3/d] at (x, y).
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : float
             The x-coordinate of the location [m].
 
@@ -241,8 +241,8 @@ class Model:
         """
         Computes the discharge potential [m^3/d] at (x, y) due to the wells only.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : float
             The x-coordinate of the location [m].
 
@@ -271,8 +271,8 @@ class Model:
         Compute the two components of the vertically integrated discharge
         vector [m^2/d] at (x, y).
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : float
             The x-coordinate of the location [m].
 
@@ -319,8 +319,8 @@ class Model:
         """
         Compute the piezometric head [m] at (x, y).
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : float
             The x-coordinate of the location [m].
 
@@ -355,8 +355,8 @@ class Model:
         Compute the two components of the vertically averaged seepage
         velocity vector [m/d] at (x, y).
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : float
             The x-coordinate of the location [m].
 
@@ -395,8 +395,8 @@ class Model:
         velocity vector [m/d] at (x, y). This version of the function
         assumes that the aquifer is confined, without checking.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : float
             The x-coordinate of the location [m].
 
@@ -431,8 +431,8 @@ class Model:
         """
         Fit the regionalflow's coefficient using weighted least squares.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         obs : list of observation tuples.
             Each observation tuple contains four values: (x, y, z_ev, z_std).
                 x : float
@@ -498,8 +498,8 @@ class Model:
         """
         Construct the weighted least squares matrices for fitting the regional flow.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         obs : list of observation tuples.
             Each observation tuple contains four values: (x, y, z_ev, z_std).
                 x : float
@@ -572,8 +572,8 @@ class Model:
         """
         Compute the weighted least squares fit for the regional flow coefficients.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         WA : ndarray, shape=(nobs, 6), dtype=float
             The product of the (nobs x nobs) diagonl weight matrix W times
             the (nobs x 6) regressors matrix A.

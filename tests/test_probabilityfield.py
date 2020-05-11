@@ -12,13 +12,13 @@ Author
 
 Version
 -------
-    02 May 2020
+    09 May 2020
 """
 
 import numpy as np
 import pytest
 
-from onekapy.probabilityfield import ProbabilityField, RangeError
+from oneka.probabilityfield import ProbabilityField, RangeError
 
 
 def test_probabilityfield_constructor():

@@ -1,24 +1,3 @@
-"""
-
-
-Authors
--------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
-
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
-
-Version
--------
-    03 May 2020
-"""
-
-# ======================================
-# Here are the necessary data.
-# ======================================
 PROJECTNAME = 'Carlos example'
 
 TARGET = 0
@@ -39,7 +18,7 @@ CONFINED = True
 TOL = 1
 MAXSTEP = 20
 
-WELLFIELD = [(322579, 5093431, 0.2, 179)]
+WELLS = [(322579, 5093431, 0.2, 179)]
 
 OBSERVATIONS = [
     (324125, 5094758.0, 413.0040, 1.6),

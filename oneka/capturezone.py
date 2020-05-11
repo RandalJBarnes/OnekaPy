@@ -3,23 +3,23 @@ Defines and implements a single well capture zone.
 
 Classes
 -------
-    None
+None
 
-Exceptions
-----------
-    Error
+Raises
+------
+Error
 
 Functions
 ---------
-    compute_capturezone(
-            xtarget, ytarget, rtarget, npaths, duration,
-            pfield, umbra, weight,
-            tol, maxstep, feval)
-        Compute the capture zone for the target well.
+compute_capturezone(
+        xtarget, ytarget, rtarget, npaths, duration,
+        pfield, umbra, weight,
+        tol, maxstep, feval)
+    Compute the capture zone for the target well.
 
-    compute_backtrace(xys, duration, tol, maxstep, feval)
-        Compute a single backtrace using the Dormand-Prince adaptive
-        Runge-Kutta explicit solver.
+compute_backtrace(xys, duration, tol, maxstep, feval)
+    Compute a single backtrace using the Dormand-Prince adaptive
+    Runge-Kutta explicit solver.
 
 Notes
 -----
@@ -28,17 +28,17 @@ o   We may be able to parallelize the tracking particles to speed up
 
 Authors
 -------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
+Richard Soule
+Source Water Protection
+Minnesota Department of Health
 
 Version
 -------
-    02 May 2020
+11 May 2020
 """
 
 import logging
@@ -55,8 +55,8 @@ def compute_capturezone(
     """
     Compute the capture zone for the target well.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     xtarget : float
         The x-coordinate of the target well [m].
 
@@ -129,8 +129,8 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
     Compute a single backtrace using the Dormand-Prince adaptive
     Runge-Kutta explicit solver.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     xs : float
         The x-coordinate [m] of the starting point.
 

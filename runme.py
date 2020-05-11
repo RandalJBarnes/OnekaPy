@@ -1,5 +1,5 @@
 """
-
+A simple driver for OnekaPy. 
 
 Authors
 -------
@@ -13,7 +13,7 @@ Authors
 
 Version
 -------
-    07 May 2020
+    10 May 2020
 """
 
 from datetime import datetime
@@ -24,7 +24,7 @@ import cProfile
 import pstats
 from pstats import SortKey
 
-from onekapy.oneka import oneka
+from oneka.oneka import oneka
 
 import importlib
 
@@ -40,13 +40,14 @@ def main(module_name):
 
     # Initialize the run.
     start_time = time.time()
+    RUNTIME = time.asctime()
 
     # Setup the logging.
-    logger = logging.getLogger('OnekaPy')
+    logger = logging.getLogger('Oneka')
     logger.setLevel(logging.INFO)
 
     # Create file handler which logs all messages.
-    fname='logs\\OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log'
+    fname='logs\\Oneka' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.log'
     fh = logging.FileHandler(filename=fname)
     fh.setLevel(logging.INFO)
 
@@ -58,21 +59,20 @@ def main(module_name):
     logger.addHandler(ch)
     logger.addHandler(fh)
 
-    log = logging.getLogger('OnekaPy')
-
-    log.info('Project: {0}'.format(m.PROJECTNAME))
-    log.info('Run date: {0}'.format(time.asctime()))
+    log = logging.getLogger('Oneka')
 
     # Call the working function.
     oneka(
+        m.PROJECTNAME, RUNTIME,
         m.TARGET, m.NPATHS, m.DURATION, m.NREALIZATIONS,
         m.BASE, m.C_DIST, m.P_DIST, m.T_DIST,
-        m.WELLFIELD, m.OBSERVATIONS,
+        m.WELLS, m.OBSERVATIONS,
         m.BUFFER, m.SPACING, m.UMBRA,
         m.CONFINED, m.TOL, m.MAXSTEP)
 
     # Shutdown the run.
     elapsedtime = time.time() - start_time
+    log.info('\n')
     log.info('Total elapsed time = %.4f seconds' % elapsedtime)
     logging.shutdown()
 
@@ -95,4 +95,3 @@ def profile_me():
 if __name__ == "__main__":
     module_name = input('Enter the module name (without .py): ')
     main(module_name)
-

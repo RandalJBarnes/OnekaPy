@@ -14,13 +14,13 @@ Author
 
 Version
 -------
-    02 May 2020
+    09 May 2020
 """
 
 import numpy as np
 import pytest
 
-from onekapy.model import Model
+from oneka.model import Model
 
 
 @pytest.fixture

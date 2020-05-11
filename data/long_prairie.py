@@ -1,25 +1,3 @@
-"""
-
-
-
-Authors
--------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
-
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
-
-Version
--------
-    03 May 2020
-"""
-
-# ======================================
-# Here are the necessary data.
-# ======================================
 PROJECTNAME = 'Long Prairie example'
 
 TARGET = 0
@@ -28,9 +6,9 @@ DURATION = 10*365.25
 NREALIZATIONS = 100
 
 BASE = 0.0
-C_DIST = (10.0, 20.0, 30.0)
-P_DIST = (0.20, 0.25)
-T_DIST = (5.0, 10.0, 20.0)
+C_DIST = (20.0, 25.0, 30.0)
+P_DIST = (0.25)
+T_DIST = (10.0, 20.0)
 
 BUFFER = 100
 SPACING = 10
@@ -40,7 +18,7 @@ CONFINED = True
 TOL = 1
 MAXSTEP = 20
 
-WELLFIELD = [
+WELLS = [
     (355731, 5091141, 0.1524, 1097.56),       # relaeid 0000542955 !!TARGET WELL!!
     (356276, 5092259, 0.0762,   27.98),       # relaeid 0000123593
     (356276, 5092259, 0.0762,  100.53),       # relaeid 0000123593

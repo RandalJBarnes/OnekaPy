@@ -1,24 +1,3 @@
-"""
-
-
-Authors
--------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
-
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
-
-Version
--------
-    03 May 2020
-"""
-
-# ======================================
-# Here are the necessary data.
-# ======================================
 PROJECTNAME = 'Basic example'
 
 TARGET = 0
@@ -39,7 +18,7 @@ CONFINED = True
 TOL = 1
 MAXSTEP = 20
 
-WELLFIELD = [
+WELLS = [
     (2250, 2250, 0.25, (600, 750, 900)),
     (1750, 2750, 0.25, (600, 750, 900))
     ]

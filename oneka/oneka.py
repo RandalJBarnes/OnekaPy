@@ -1,38 +1,33 @@
 """
-The entry point for the OnekaPy project.
+The entry point for the Oneka project.
 
 Classes
 -------
-    None
+None
 
-Exceptions
-----------
-    None.
+Raises
+------
+None.
 
 Functions
 ---------
-    oneka(
-            target, npaths, duration, nrealizations,
-            base, c_dist, p_dist, t_dist,
-            wellfield, observations,
-            buffer=100, spacing=10, umbra=10,
-            confined=True, tol=1, maxstep=10)
-        The entry-point for the OnekaPy project. As currently written,
-        this driver computes and plots the stochastic capture zone.
+oneka(
+        projectname, runtime,
+        target, npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        stochastic_wells, observations,
+        buffer=100, spacing=10, umbra=10,
+        confined=True, tol=1, maxstep=10)
+    The entry-point for the Oneka project. As currently written,
+    this driver computes and plots the stochastic capture zone.
 
-    filter_obs(observations, wellfield, buffer)
-        Partition the obs into retained and removed. An observation is
-        removed if it is within buffer of a well. Duplicate observations
-        (i.e. obs at the same loction) are average using a minimum
-        variance weighted average.
-
-    log_the_run(
-            target, npaths, duration, nrealizations,
-            base, c_dist, p_dist, t_dist,
-            wellfield, observations,
-            buffer, spacing, umbra,
-            confined, tol, maxstep)
-        Print the banner and run information to the log file.
+log_the_run(
+        target, npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        stochastic_wells, observations,
+        buffer, spacing, umbra,
+        confined, tol, maxstep)
+    Print the banner and run information to the log file.
 
 Notes
 -----
@@ -46,48 +41,56 @@ o   This module currently generates plots using python's matplotlib
 
 Authors
 -------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
+Richard Soule
+Source Water Protection
+Minnesota Department of Health
 
 Version
 -------
-    07 May 2020
+11 May 2020
 """
 
-from datetime import datetime
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
-from onekapy.probabilityfield import ProbabilityField
-from onekapy.stochastic import compute_stochastic_capturezone, isdistribution
-from onekapy.utilities import contour_head, filter_obs, summary_statistics
+from oneka.archive import dump_oneka
+from oneka.probabilityfield import ProbabilityField
+from oneka.stochastic import create_stochastic_capturezone, isdistribution
+from oneka.utilities import filter_obs, summary_statistics
+from oneka.visualize import create_probability_plot, create_impact_plot
 
-log = logging.getLogger('OnekaPy')
+log = logging.getLogger('Oneka')
 
-VERSION = '02 May 2020'
+VERSION = '10 May 2020'
 
 
 # ------------------------------------------------------------------------------
 def oneka(
+        projectname, runtime,
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
-        wellfield, observations,
+        stochastic_wells, observations,
         buffer=100, spacing=10, umbra=10,
         confined=True, tol=1, maxstep=10):
     """
-    The entry-point for the OnekaPy project. As currently written,
+    The entry-point for the Oneka project. As currently written,
     this driver computes and plots the stochastic capture zone.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
+    projectname : string
+        An identifying name.
+
+    runtime : string
+        The asctime string for this run.
+
     target : int
-        The index identifying the target well in the wellfield.
+        The index identifying the target well in the stochastic_wells.
         That is, the well for which we will compute a stochastic
         capture zone. This uses python's 0-based indexing.
 
@@ -123,7 +126,7 @@ def oneka(
             pair   -> (min, max) for a uniform distribution, or
             triple -> (min, mode, max) for a triangular distribution.
 
-    wellfield : list of stochastic well tuples
+    stochastic_wells : list of stochastic well tuples
         A well tuple contains four values (sort of): (xw, yw, rw, qdist)
             xw : float
                 The x-coordinate of the well [m].
@@ -187,7 +190,10 @@ def oneka(
     """
 
     # Validate the arguments.
-    assert(isinstance(target, int) and 0 <= target < len(wellfield))
+    assert(isinstance(projectname, str))
+    assert(isinstance(runtime, str))
+
+    assert(isinstance(target, int) and 0 <= target < len(stochastic_wells))
     assert(isinstance(npaths, int) and 0 < npaths)
     assert((isinstance(duration, int) or isinstance(duration, float)) and 0 < duration)
 
@@ -196,8 +202,8 @@ def oneka(
     assert(isdistribution(p_dist, 0, 1))
     assert(isdistribution(t_dist, 0, np.inf))
 
-    assert(isinstance(wellfield, list) and len(wellfield) >= 1)
-    for we in wellfield:
+    assert(isinstance(stochastic_wells, list) and len(stochastic_wells) >= 1)
+    for we in stochastic_wells:
         assert(len(we) == 4 and
                (isinstance(we[0], int) or isinstance(we[0], float)) and
                (isinstance(we[1], int) or isinstance(we[1], float)) and
@@ -222,116 +228,109 @@ def oneka(
 
     # Log the run information.
     log_the_run(
+        projectname, runtime,        
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
-        wellfield, observations,
+        stochastic_wells, observations,
         buffer, spacing, umbra,
         confined, tol, maxstep)
 
     # Filter out all of the obs that are too close to any pumping well.
-    obs = filter_obs(observations, wellfield, buffer)
+    obs = filter_obs(observations, stochastic_wells, buffer)
     assert(len(obs) > 6)
 
-    # Initialize the probability field.
-    xtarget, ytarget, rtarget = wellfield[target][0:3]
-    cz = ProbabilityField(spacing, spacing, xtarget, ytarget)
+    # Log the summary statistics.
+    buf = summary_statistics(obs, ['Easting', 'Northing', 'Head', 'Stdev'], 
+        ['12.2f', '12.2f', '12.2f', '12.2f'], 'Retained Observations')
+    log.info('\n')
+    log.info(buf.getvalue())
 
-    # Compute the stochastic capture zone for the target well.
-    compute_stochastic_capturezone(
-        xtarget, ytarget, rtarget,
-        npaths, duration, nrealizations,
+    # Create the stochastic capture zone for the target well.
+    pfield = create_stochastic_capturezone(
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
-        wellfield, obs,
-        cz, umbra, confined,
+        stochastic_wells, obs,
+        spacing, umbra, confined,
         tol, maxstep)
 
-    # Make the probability contour plot.
-    plt.figure()
-    plt.clf()
-    plt.axis('equal')
+    # Archive the run.
+    dump_oneka(
+        projectname, runtime,
+        target, npaths, duration, nrealizations,
+        base, c_dist, p_dist, t_dist,
+        stochastic_wells, observations,
+        buffer, spacing, umbra,
+        confined, tol, maxstep,
+        pfield)
 
-    if cz.total_weight > 0:
-        X = np.linspace(cz.xmin, cz.xmax, cz.ncols)
-        Y = np.linspace(cz.ymin, cz.ymax, cz.nrows)
-        Z = cz.pgrid/cz.total_weight
-        plt.contourf(X, Y, Z, np.linspace(0, 1, 11), cmap='tab10')
-        plt.colorbar(ticks=np.linspace(0, 1, 11))
-        plt.contour(X, Y, Z, np.linspace(0, 1, 11), colors=['black'])
+    # Make the impact plot.
+    pr, area = create_impact_plot(spacing, pfield)
 
-        plt.xlabel('UTM Easting [m]')
-        plt.ylabel('UTM Northing [m]')
-        plt.title('{0}, {1}, {2:.1f}'.format(nrealizations, npaths, duration), fontsize=18)
-        plt.grid(True)
+    # Log the decile results.
+    log.info('\n')
+    log.info('===========================================')
+    log.info(' Pr(capture)         Area             Area ')
+    log.info(' Exceeds            [m^2]          [acres] ')
+    log.info('-------------------------------------------')
+    for p in np.linspace(0.05, 0.95, 19):
+        i = np.argmax(pr<=p)
+        log.info('{0:8.3f} {1:16,.0f} {2:16,.2f}'
+            .format(pr[i], area[i], area[i]/4046.86))               # 4046.86 m^2/acre
+    log.info('===========================================')
 
-    else:
-        log.warning(' There were no valid realizations.')
+    # Make the filled contour plot.
+    create_probability_plot(target, stochastic_wells, obs, pfield)
 
-    plot_locations(plt, target, wellfield, obs)
-
-    fname='logs\\OnekaPy' + datetime.now().strftime('%Y%m%dT%H%M%S') + '.pdf'
-    plt.savefig(fname)
     plt.show()
 
 # ------------------------------------------------------------------------------
-def plot_locations(plt, target, wellfield, obs):
-
-    # Plot the wells as o markers.
-    xw = [we[0] for we in wellfield]
-    yw = [we[1] for we in wellfield]
-    plt.plot(xw, yw, 'o', markeredgecolor='k', markerfacecolor='w')
-
-    # Plot the target well as a star marker.
-    xtarget, ytarget = wellfield[target][0:2]
-    plt.plot(xtarget, ytarget, '*', markeredgecolor='k', markerfacecolor='w', markersize=12)
-
-    # Plot the retained observations as fat + markers.
-    xo = [ob[0] for ob in obs]
-    yo = [ob[1] for ob in obs]
-    plt.plot(xo, yo, 'P', markeredgecolor='k', markerfacecolor='w')
-
-
-# ------------------------------------------------------------------------------
 def log_the_run(
+        projectname, runtime,    
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
-        wellfield, observations,
+        stochastic_wells, observations,
         buffer, spacing, umbra,
         confined, tol, maxstep):
+    """
+    Log all of the defining arguments for the model run.
+    """
 
     log.info('')
-    log.info(' ========================================================')
-    log.info('  OOOOOO  NN   N  EEEEEE  K   KK  AAAAAA  PPPPPP  Y    Y ')
-    log.info('  O    O  N N  N  E       K KK    A    A  P    P   Y  Y  ')
-    log.info('  O    O  N  N N  EEEEE   KK      AAAAAA  PPPPPP    YY   ')
-    log.info('  O    O  N   NN  E       K KK    A    A  P         Y    ')
-    log.info('  OOOOOO  N    N  EEEEEE  K   KK  A    A  P         Y    ')
-    log.info(' ========================================================')
-    log.info(' Version: {0}'.format(VERSION))
+    log.info('========================================')
+    log.info(' OOOOOO  NN   N  EEEEEE  K   KK  AAAAAA ')
+    log.info(' O    O  N N  N  E       K KK    A    A ')
+    log.info(' O    O  N  N N  EEEEE   KK      AAAAAA ')
+    log.info(' O    O  N   NN  E       K KK    A    A ')
+    log.info(' OOOOOO  N    N  EEEEEE  K   KK  A    A ')
+    log.info('========================================')
+    log.info('Version: {0}'.format(VERSION))
     log.info('')
 
-    log.info(' target        = {0:d}'.format(target))
-    log.info(' npaths        = {0:d}'.format(npaths))
-    log.info(' duration      = {0:.2f}'.format(duration))
-    log.info(' nrealizations = {0:d}'.format(nrealizations))
-    log.info(' base          = {0:.2f}'.format(base))
-    log.info(' c_dist        = {0}'.format(c_dist))
-    log.info(' p_dist        = {0}'.format(p_dist))
-    log.info(' t_dist        = {0}'.format(t_dist))
-    log.info(' buffer        = {0:.2f}'.format(buffer))
-    log.info(' spacing       = {0:.2f}'.format(spacing))
-    log.info(' umbra         = {0:.2f}'.format(umbra))
-    log.info(' confined      = {0}'.format(confined))
-    log.info(' tol           = {0:.2f}'.format(tol))
-    log.info(' maxstep       = {0:.2f}'.format(maxstep))
+    log.info('project name  = {0}'.format(projectname))
+    log.info('run time      = {0}'.format(runtime))
+    log.info('target        = {0:d}'.format(target))
+    log.info('npaths        = {0:d}'.format(npaths))
+    log.info('duration      = {0:.2f}'.format(duration))
+    log.info('nrealizations = {0:d}'.format(nrealizations))
+    log.info('base          = {0:.2f}'.format(base))
+    log.info('c_dist        = {0}'.format(c_dist))
+    log.info('p_dist        = {0}'.format(p_dist))
+    log.info('t_dist        = {0}'.format(t_dist))
+    log.info('buffer        = {0:.2f}'.format(buffer))
+    log.info('spacing       = {0:.2f}'.format(spacing))
+    log.info('umbra         = {0:.2f}'.format(umbra))
+    log.info('confined      = {0}'.format(confined))
+    log.info('tol           = {0:.2f}'.format(tol))
+    log.info('maxstep       = {0:.2f}'.format(maxstep))
 
     log.info('\n')
-    log.info(' wellfield: {0}'.format(len(wellfield)))
-    for we in wellfield:
-        log.info('     {0}'.format(we))
+    log.info('stochastic_wells: {0}'.format(len(stochastic_wells)))
+    for we in stochastic_wells:
+        log.info('    {0}'.format(we))
 
     log.info('\n')
-    log.info(' observations: {0}'.format(len(observations)))
+    log.info('observations: {0}'.format(len(observations)))
     for ob in observations:
-        log.info('     {0}'.format(ob))
+        log.info('    {0}'.format(ob))
 
     log.info('\n')

@@ -1,30 +1,9 @@
-"""
-
-
-Authors
--------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
-
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
-
-Version
--------
-    03 May 2020
-"""
-
-# ======================================
-# Here are the necessary data.
-# ======================================
 PROJECTNAME = 'Barnesville example'
 
 TARGET = 0
-NPATHS = 500
+NPATHS = 200
 DURATION = 10*365.25
-NREALIZATIONS = 100
+NREALIZATIONS = 200
 
 BASE = 0.0
 C_DIST = (1.0, 5.0, 20.0)
@@ -32,14 +11,14 @@ P_DIST = (0.20, 0.25)
 T_DIST = (100.0, 120.0, 150.0)
 
 BUFFER = 100
-SPACING = 10
-UMBRA = 20
+SPACING = 2
+UMBRA = 4
 
 CONFINED = True
 TOL = 1
 MAXSTEP = 20
 
-WELLFIELD = [(0.0, 0.0, 0.2, 312.0)]
+WELLS = [(0.0, 0.0, 0.2, 312.0)]
 
 OBSERVATIONS = [
     (-857, -737, 306.02, 1.62),

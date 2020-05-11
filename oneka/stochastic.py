@@ -3,29 +3,29 @@ Defines and implements a single well capture zone.
 
 Classes
 -------
-    None
+None
 
 Exceptions
 ----------
-    Error
-    DistributionError
+Error
+DistributionError
 
 Functions
 ---------
-    compute_stochastic_capturezone(
-        target, npaths, duration, nrealizations,
-        base, c_dist, p_dist, t_dist,
-        wellfield, obs,
-        pfield, umbra, confined,
-        tol, maxstep):
-    Compute the stochastic capture zone for the target well.
+create_stochastic_capturezone(
+    target, npaths, duration, nrealizations,
+    base, c_dist, p_dist, t_dist,
+    stochastic_wells, observations,
+    spacing, umbra, confined,
+    tol, maxstep):
+Compute the stochastic capture zone for the target well.
 
-    generate_random_variate(arg) :
-        Generate a random variate from a dirac (constant), uniform,
-        or triangular distribution, depending on the argument tuple.
+generate_random_variate(arg) :
+    Generate a random variate from a dirac (constant), uniform,
+    or triangular distribution, depending on the argument tuple.
 
-    isdistribution(arg, lb, ub):
-        Do the given arguments define a valid distribution?
+isdistribution(arg, lb, ub):
+    Do the given arguments define a valid distribution?
 
 Notes
 -----
@@ -34,25 +34,26 @@ o   We may be able to parallelize the tracking particles to speed up
 
 Authors
 -------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
+Richard Soule
+Source Water Protection
+Minnesota Department of Health
 
 Version
 -------
-    07 May 2020
+11 May 2020
 """
 
 import logging
 import numpy as np
 import progressbar
 
-from onekapy.capturezone import compute_capturezone
-from onekapy.model import Model
+from oneka.capturezone import compute_capturezone
+from oneka.model import Model
+from oneka.probabilityfield import ProbabilityField
 
 
 log = logging.getLogger(__name__)
@@ -69,26 +70,21 @@ class DistributionError(Error):
 
 
 # ------------------------------------------------------------------------------
-def compute_stochastic_capturezone(
-        xtarget, ytarget, rtarget,
-        npaths, duration, nrealizations,
+def create_stochastic_capturezone(
+        target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
-        wellfield, obs,
-        pfield, umbra, confined,
+        stochastic_wells, observations,
+        spacing, umbra, confined,
         tol, maxstep):
     """
     Compute the stochastic capture zone for the target well.
 
-    Parameters
-    ----------
-    xtarget : float
-        The x-coordinate of the target well [m].
-
-    ytarget : float
-        The y-coordinate of the target well [m].
-
-    rtarget : float
-        The radius of the target well [m]. 0 < rtarget.
+    Arguments
+    ---------
+    target : int
+        The index identifying the target well in the stochastic_wells.
+        That is, the well for which we will compute a stochastic
+        capture zone. This uses python's 0-based indexing.
 
     npaths : int
         The minimum number of paths (starting points for the backtraces)
@@ -122,7 +118,7 @@ def compute_stochastic_capturezone(
             pair   -> (min, max) for a uniform distribution, or
             triple -> (min, mode, max) for a triangular distribution.
 
-    wellfield : list of stochastic well tuples
+    stochastic_wells : list of stochastic well tuples
         A well tuple contains four values (sort of): (xw, yw, rw, qdist)
             xw : float
                 The x-coordinate of the well [m].
@@ -139,7 +135,7 @@ def compute_stochastic_capturezone(
                     pair -> (min, max) for a uniform distribution, or
                     triple -> (min, mode, max) for a triangular distribution.
 
-    obs : list of observation tuples.
+    observations : list of observation tuples.
         An observation tuple contains four values: (x, y, z_ev, z_std), where
             x : float
                 The x-coordinate of the observation [m].
@@ -150,8 +146,9 @@ def compute_stochastic_capturezone(
             z_std : float
                 The standard deviation of the observed static water level elevation [m].
 
-    pfield : probabilityfield
-        The auto-expanding, axis-aligned, grid-based probability field.
+    spacing : float, optional
+        The spacing of the rows and the columns [m] in the square
+        ProbabilityField grids. Default is 10.
 
     umbra : float
         The vector-to-raster range [m] when mapping a particle path onto
@@ -174,7 +171,8 @@ def compute_stochastic_capturezone(
 
     Returns
     -------
-        None.
+    pfield : ProbabilityField
+        The auto-expanding, axis-aligned, grid-based probability field.
 
     Notes
     -----
@@ -206,6 +204,10 @@ def compute_stochastic_capturezone(
             grid.
     """
 
+    # Initialize.
+    xtarget, ytarget, rtarget = stochastic_wells[target][0:3]
+    pfield = ProbabilityField(spacing, spacing, xtarget, ytarget)
+
     # Initialize the progress bar.
     bar = progressbar.ProgressBar(max_value=nrealizations)
     bar.update(0)
@@ -216,7 +218,7 @@ def compute_stochastic_capturezone(
         # Generate a realization of a random well field:
         # fixed loations, random discharges.
         wells = []
-        for w in wellfield:
+        for w in stochastic_wells:
             xw, yw, rw = w[0:3]
             qw = generate_random_variate(w[3])
             wells.append([xw, yw, rw, qw])
@@ -230,7 +232,7 @@ def compute_stochastic_capturezone(
         mo = Model(base, conductivity, porosity, thickness, wells)
 
         # Generate the realizations for the regional flow ceofficients.
-        coef_ev, coef_cov = mo.fit_regional_flow(obs, xtarget, ytarget)
+        coef_ev, coef_cov = mo.fit_regional_flow(observations, xtarget, ytarget)
         coef_ev = np.reshape(coef_ev, [6, ])
         mo.coef = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
 
@@ -261,6 +263,8 @@ def compute_stochastic_capturezone(
         # Update the progress bar.
         bar.update(i+1)
 
+    return pfield    
+
 
 # ------------------------------------------------------------------------------
 def generate_random_variate(arg):
@@ -268,8 +272,8 @@ def generate_random_variate(arg):
     Generate a random variate from a dirac (constant), uniform, or triangular
     distribution, depending on the argument tuple.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     arg : scalar, pair, or triple
         scalar -> constant,
         pair -> (min, max) for a uniform distribution, or
@@ -302,6 +306,17 @@ def generate_random_variate(arg):
 def isdistribution(arg, lb, ub):
     """
     Do the given arguments define a valid distribution?
+
+    Arguments
+    ---------
+    arg : singleton, pair, or triple
+        The characterization of a distribution.
+
+    lb : float
+        lower bound
+
+    ub : float
+        upper bound
 
     Notes
     -----

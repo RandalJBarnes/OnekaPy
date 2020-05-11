@@ -1,30 +1,9 @@
-"""
-
-
-Authors
--------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
-
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
-
-Version
--------
-    03 May 2020
-"""
-
-# ======================================
-# Here are the necessary data.
-# ======================================
 PROJECTNAME = 'Perham example'
 
 TARGET = 0
-NPATHS = 500
+NPATHS = 200
 DURATION = 10*365.25
-NREALIZATIONS = 100
+NREALIZATIONS = 200
 
 BASE = 0.0
 C_DIST = (12.0, 65.0, 120.0)
@@ -32,14 +11,14 @@ P_DIST = (0.20, 0.25)
 T_DIST = (10, 20, 30)
 
 BUFFER = 100
-SPACING = 10
-UMBRA = 20
+SPACING = 4
+UMBRA = 8
 
 CONFINED = True
 TOL = 1
-MAXSTEP = 20
+MAXSTEP = 10
 
-WELLFIELD = [
+WELLS = [
     (302338, 5162551, 0.2, 1372),
     (302320, 5162497, 0.2, 914),
     (303063, 5163421, 0.2, 321),

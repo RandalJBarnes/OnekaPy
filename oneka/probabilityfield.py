@@ -4,30 +4,30 @@ probability field.
 
 Classes
 -------
-    ProbabilityField
+ProbabilityField
 
 Raises
 ------
-    RangeError
+RangeError
 
 Notes
 -----
-o   TODO: Add some explanation of what the ProbabilityField is,
-    and how it works.
+o   TODO: Add some explanation of what the ProbabilityField is, and 
+    how it works.
 
 Authors
 -------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
+Richard Soule
+Source Water Protection
+Minnesota Department of Health
 
 Version
 -------
-    07 May 2020
+11 May 2020
 """
 
 import logging
@@ -177,8 +177,8 @@ class ProbabilityField:
         If necessary, expand the grids to include xmin, xmax, ymin, and ymax.
         The contents of the grids are maintained.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         xmin : float
             trial minimum x-coordinate [m].
         xmax : float
@@ -266,8 +266,8 @@ class ProbabilityField:
         Insert a single linear segment [(ax, ay), (bx, by)] of a single track into the
         probability field registration array (rgrid), using a vector-to-raster umbra.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         ax : float
             The x-coordinate [m] of line segment end point a.
 
@@ -315,8 +315,8 @@ class ProbabilityField:
         Insert a single track into the registration array (rgrid), using a
         vector-to-raster range of width.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         x : ndarray, dtype=double, shape=(n, ).
             Array of x-coordinates [m] of the particle track.
 
@@ -344,8 +344,8 @@ class ProbabilityField:
         Add the current realization's registration rgrid into the current probability
         pgrid with pseudo-probability weight. The registration rgrid is then reset.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         weight : float
             Pseudo-probability associated with the current realization.
 
@@ -364,8 +364,8 @@ class ProbabilityField:
         Reset registration rgrid. This is needed when discarding a
         partially processed invalid realization.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         None.
 
         Returns
@@ -383,8 +383,8 @@ class ProbabilityField:
         segment defined by [(ax,ay),(bx,by)].  Note, this is the distance to
         the line segment, not the distance to the line.
 
-        Parameters
-        ----------
+        Arguments
+        ---------
         ax : float
             x-coordinate of endpoint a.
         ay : float

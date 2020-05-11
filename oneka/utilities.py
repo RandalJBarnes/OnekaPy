@@ -3,17 +3,11 @@ A small set of utilitiy functions.
 
 Functions
 ---------
-    contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
-
-    contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols)
-
     filter_obs(observations, wellfield, buffer):
         Partition the obs into retained and removed. An observation is
         removed if it is within buffer of a well. Duplicate observations
         (i.e. obs at the same loction) are average using a minimum
         variance weighted average.
-
-    quick_capture_zone(mo, we, nrays, nyears, maxstep, fmt)
 
     summary_statistics(values, names, formats, title)
         Create a simple summary statistics table.
@@ -26,7 +20,7 @@ Author
 
 Version
 -------
-    07 May 2020
+    10 May 2020
 """
 
 import io
@@ -34,45 +28,9 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
-import onekapy.model
+import oneka.model
 
-log = logging.getLogger('OnekaPy')
-
-
-# ------------------------------------------------------------------------------
-def contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
-    x = np.linspace(xmin, xmax, ncols)
-    y = np.linspace(ymin, ymax, nrows)
-
-    grid = np.zeros((nrows, ncols), dtype=np.double)
-
-    for i in range(nrows):
-        for j in range(ncols):
-            try:
-                grid[i, j] = mo.compute_head(x[j], y[i])
-            except onekapy.model.AquiferError:
-                grid[i, j] = np.nan
-
-    plt.contourf(x, y, grid, cmap='bwr')
-    plt.colorbar()
-
-
-# ------------------------------------------------------------------------------
-def contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols):
-    x = np.linspace(xmin, xmax, ncols)
-    y = np.linspace(ymin, ymax, nrows)
-
-    grid = np.zeros((nrows, ncols), dtype=np.double)
-
-    for i in range(nrows):
-        for j in range(ncols):
-            try:
-                grid[i, j] = mo.compute_potential(x[j], y[i])
-            except onekapy.model.AquiferError:
-                grid[i, j] = np.nan
-
-    plt.contourf(x, y, grid, cmap='bwr')
-    plt.colorbar()
+log = logging.getLogger('Oneka')
 
 
 # ------------------------------------------------------------------------------
@@ -187,60 +145,6 @@ def filter_obs(observations, wellfield, buffer):
     log.info('      reporting. Be aware!')
 
     return retained_obs
-
-
-# ------------------------------------------------------------------------------
-def quick_capture_zone(mo, we, nrays, nyears, maxstep, fmt):
-    """
-    Compute and plot a capture zone for Well we using Model mo.
-
-    Parameters
-    ----------
-    mo : Model
-        The driving model for the capture zone.
-
-    we : Well
-        The well for which the capture zone is computed
-
-    nrays : int
-        The number of uniformly distributed rays to trace out from the well.
-
-    nyears : double
-        The number years to run the back trace.
-
-    maxstep : float
-        The solve_ivp max_step parameter.
-
-    fmt : string
-        The format string for the backtrace plot.
-
-    Returns
-    -------
-    None.
-    """
-
-    radius = we.radius + 1
-    xc = we.x
-    yc = we.y
-
-    for theta in np.linspace(0, 2*np.pi, nrays):
-        xo = radius*np.cos(theta) + xc
-        yo = radius*np.sin(theta) + yc
-
-        try:
-            sol = mo.compute_backtrack(xo, yo, nyears*365, maxstep)
-
-            for year in np.arange(0, nyears):
-                idx = np.logical_and(year*365 < sol.t, sol.t < (year+1)*365)
-
-                if (year % 2) == 0:
-                    plt.plot(sol.y[0, idx], sol.y[1, idx], fmt, linewidth=4)
-                else:
-                    plt.plot(sol.y[0, idx], sol.y[1, idx], '-k')
-
-        except onekapy.model.AquiferError:
-            print(f"Aquifer error (e.g. dry) for theta = {theta:.3f}")
-            continue
 
 
 # ------------------------------------------------------------------------------

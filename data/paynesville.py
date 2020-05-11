@@ -1,45 +1,24 @@
-"""
-
-
-Authors
--------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
-
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
-
-Version
--------
-    03 May 2020
-"""
-
-# ======================================
-# Here are the necessary data.
-# ======================================
-PROJECTNAME = 'PAynesville example'
+PROJECTNAME = 'Paynesville example'
 
 TARGET = 0
-NPATHS = 500
+NPATHS = 200
 DURATION = 10*365.25
-NREALIZATIONS = 100
+NREALIZATIONS = 200
 
 BASE = 0.0
-C_DIST = (10.0, 52.0, 150.0)
-P_DIST = (0.20, 0.25)
-T_DIST = (2.0, 9.0, 65.0)
+C_DIST = (10.0, 20.0, 40.0)
+P_DIST = (0.25)
+T_DIST = (5.0, 10.0)
 
 BUFFER = 100
-SPACING = 10
-UMBRA = 20
+SPACING = 2
+UMBRA = 4
 
 CONFINED = True
 TOL = 1
-MAXSTEP = 20
+MAXSTEP = 10
 
-WELLFIELD = [
+WELLS = [
     (366156.00, 5026806.00, 0.20, 500.00),
     (366631.00, 5026508.00, 0.20, 500.00),
     (366745.00, 5026484.00, 0.20, 500.00),
