@@ -11,7 +11,7 @@ contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols)
     Compute and plot the filled-contour map for the discharge
     potential, as defined by model mo.
 
-create_probability_plot(target, stochastic_wells, obs, cz, smooth):
+create_probability_plot(target, stochastic_wells, obs, pf, smooth):
     Create the visible filled-contour plot for the stochastic capture
     zone. 
 
@@ -165,7 +165,7 @@ def contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 
 
 # ------------------------------------------------------------------------------
-def create_probability_plot(target, stochastic_wells, obs, cz, smooth=0):
+def create_probability_plot(target, stochastic_wells, obs, pf, smooth=0):
     """
     Create the visible filled-contour plot for the stochastic capture zone.
 
@@ -201,7 +201,7 @@ def create_probability_plot(target, stochastic_wells, obs, cz, smooth=0):
             z_std : float
                 The standard deviation of the observed static water level elevation [m].
 
-    cz : ProbabilityField
+    pf : ProbabilityField
         The auto-expanding, axis-aligned, grid-based probability field.
 
     smooth : scalar, optional
@@ -222,20 +222,20 @@ def create_probability_plot(target, stochastic_wells, obs, cz, smooth=0):
     plt.figure()
     plt.axis('equal')
 
-    if cz.total_weight <= 0:
+    if pf.total_weight <= 0:
         log.warning(' There were no valid realizations.')
         raise CaptureZoneError('Empty capture zone')
 
-    X = np.linspace(cz.xmin, cz.xmax, cz.ncols)
-    Y = np.linspace(cz.ymin, cz.ymax, cz.nrows)
-    Z = cz.pgrid/cz.total_weight
+    X = np.linspace(pf.xmin, pf.xmax, pf.ncols)
+    Y = np.linspace(pf.ymin, pf.ymax, pf.nrows)
+    Z = pf.pgrid/pf.total_weight
 
     if smooth > 0:
         Z = scipy.ndimage.gaussian_filter(Z, smooth, mode='constant', cval=0.0)
         
     plt.contourf(X, Y, Z, np.linspace(0, 1, 11), cmap='tab10')
     plt.colorbar(ticks=np.linspace(0, 1, 11))
-    plt.contour(X, Y, Z, np.linspace(0.1, 1.0, 9), colors=['black'])
+    plt.contour(X, Y, Z, np.linspace(0.1, 0.9, 9), colors=['black'])
 
     plt.xlabel('UTM Easting [m]')
     plt.ylabel('UTM Northing [m]')
@@ -281,7 +281,7 @@ def create_impact_plot(spacing, pf):
     CaptureZoneError
     """
 
-    if cz.total_weight <= 0:
+    if pf.total_weight <= 0:
         log.warning(' There were no valid realizations.')
         raise CaptureZoneError('Empty capture zone')
 

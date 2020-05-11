@@ -226,6 +226,7 @@ def oneka(
     assert((isinstance(buffer, int) or isinstance(buffer, float)) and 0 < buffer)
     assert((isinstance(spacing, int) or isinstance(spacing, float)) and 0 < spacing)
     assert((isinstance(umbra, int) or isinstance(umbra, float)) and 0 < umbra)
+    assert((isinstance(smooth, int) or isinstance(smooth, float)) and 0 < smooth)
 
     assert(isinstance(confined, bool))
     assert((isinstance(tol, int) or isinstance(tol, float)) and 0 < tol)
@@ -237,7 +238,7 @@ def oneka(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer, spacing, umbra,
+        buffer, spacing, umbra, smooth,
         confined, tol, maxstep)
 
     # Filter out all of the obs that are too close to any pumping well.
