@@ -67,7 +67,7 @@ def main(module_name):
         m.TARGET, m.NPATHS, m.DURATION, m.NREALIZATIONS,
         m.BASE, m.C_DIST, m.P_DIST, m.T_DIST,
         m.WELLS, m.OBSERVATIONS,
-        m.BUFFER, m.SPACING, m.UMBRA,
+        m.BUFFER, m.SPACING, m.UMBRA, m.SMOOTH,
         m.CONFINED, m.TOL, m.MAXSTEP)
 
     # Shutdown the run.

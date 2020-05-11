@@ -16,7 +16,7 @@ oneka(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer=100, spacing=10, umbra=10,
+        buffer=100, spacing=10, umbra=10, smooth=0,
         confined=True, tol=1, maxstep=10)
     The entry-point for the Oneka project. As currently written,
     this driver computes and plots the stochastic capture zone.
@@ -75,7 +75,7 @@ def oneka(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer=100, spacing=10, umbra=10,
+        buffer=100, spacing=10, umbra=10, smooth=0,
         confined=True, tol=1, maxstep=10):
     """
     The entry-point for the Oneka project. As currently written,
@@ -163,6 +163,11 @@ def oneka(
         The vector-to-raster range [m] when mapping a particle path
         onto the ProbabilityField grids. If a grid node is within
         umbra of a particle path, it is marked as visited. Default is 10.
+
+    smooth : scalar, optional
+        The nominal 'standard deviation' for the Gaussian kernel smoother
+        (scipy.ndimage.gaussian_filter) to be applied to the probability
+        contours. The units are in grids.
 
     confined : boolean, optional
         True if it is safe to assume that the aquifer is confined
@@ -259,7 +264,7 @@ def oneka(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer, spacing, umbra,
+        buffer, spacing, umbra, smooth,
         confined, tol, maxstep,
         pfield)
 
@@ -279,7 +284,7 @@ def oneka(
     log.info('===========================================')
 
     # Make the filled contour plot.
-    create_probability_plot(target, stochastic_wells, obs, pfield)
+    create_probability_plot(target, stochastic_wells, obs, pfield, smooth)
 
     plt.show()
 
@@ -289,7 +294,7 @@ def log_the_run(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer, spacing, umbra,
+        buffer, spacing, umbra, smooth,
         confined, tol, maxstep):
     """
     Log all of the defining arguments for the model run.
@@ -319,6 +324,7 @@ def log_the_run(
     log.info('buffer        = {0:.2f}'.format(buffer))
     log.info('spacing       = {0:.2f}'.format(spacing))
     log.info('umbra         = {0:.2f}'.format(umbra))
+    log.info('smooth        = {0}'.format(smooth))
     log.info('confined      = {0}'.format(confined))
     log.info('tol           = {0:.2f}'.format(tol))
     log.info('maxstep       = {0:.2f}'.format(maxstep))

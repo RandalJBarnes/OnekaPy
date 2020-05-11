@@ -16,7 +16,7 @@ dump_oneka(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer, spacing, umbra,
+        buffer, spacing, umbra, smooth,
         confined, tol, maxstep,
         pfield)
 
@@ -48,7 +48,7 @@ def dump_oneka(
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
-        buffer, spacing, umbra,
+        buffer, spacing, umbra, smooth,
         confined, tol, maxstep,
         pfield):
 
@@ -72,6 +72,7 @@ def dump_oneka(
         'buffer' : buffer, 
         'spacing' : spacing, 
         'umbra' : umbra,
+        'smooth' : smooth,
         'confined' : confined, 
         'tol' : tol, 
         'maxstep' : maxstep,

@@ -11,7 +11,7 @@ contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols)
     Compute and plot the filled-contour map for the discharge
     potential, as defined by model mo.
 
-create_probability_plot(target, stochastic_wells, obs, cz):
+create_probability_plot(target, stochastic_wells, obs, cz, smooth):
     Create the visible filled-contour plot for the stochastic capture
     zone. 
 
@@ -46,6 +46,7 @@ import io
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.ndimage
 
 import oneka.model
 
@@ -164,7 +165,7 @@ def contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 
 
 # ------------------------------------------------------------------------------
-def create_probability_plot(target, stochastic_wells, obs, cz):
+def create_probability_plot(target, stochastic_wells, obs, cz, smooth=0):
     """
     Create the visible filled-contour plot for the stochastic capture zone.
 
@@ -203,6 +204,11 @@ def create_probability_plot(target, stochastic_wells, obs, cz):
     cz : ProbabilityField
         The auto-expanding, axis-aligned, grid-based probability field.
 
+    smooth : scalar, optional
+        The nominal 'standard deviation' for the Gaussian kernel smoother
+        (scipy.ndimage.gaussian_filter) to be applied to the probability
+        contours. The units are in grids. Default = 0.
+
     Returns
     -------
     None.
@@ -223,6 +229,10 @@ def create_probability_plot(target, stochastic_wells, obs, cz):
     X = np.linspace(cz.xmin, cz.xmax, cz.ncols)
     Y = np.linspace(cz.ymin, cz.ymax, cz.nrows)
     Z = cz.pgrid/cz.total_weight
+
+    if smooth > 0:
+        Z = scipy.ndimage.gaussian_filter(Z, smooth, mode='constant', cval=0.0)
+        
     plt.contourf(X, Y, Z, np.linspace(0, 1, 11), cmap='tab10')
     plt.colorbar(ticks=np.linspace(0, 1, 11))
     plt.contour(X, Y, Z, np.linspace(0.1, 1.0, 9), colors=['black'])
