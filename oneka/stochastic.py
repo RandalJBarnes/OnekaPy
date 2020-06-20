@@ -209,7 +209,8 @@ def create_stochastic_capturezone(
     pfield = ProbabilityField(spacing, spacing, xtarget, ytarget)
 
     # Initialize the progress bar.
-    bar = progressbar.ProgressBar(max_value=nrealizations)
+    bar = progressbar.ProgressBar(maxval=nrealizations)
+    bar.start()
     bar.update(0)
 
     # Generate and register the capture zone realizations.

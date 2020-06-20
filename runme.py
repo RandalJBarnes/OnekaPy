@@ -93,5 +93,7 @@ def profile_me():
 
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    module_name = input('Enter the module name (without .py): ')
+    module_name = input('Enter the module name (without .py, e.g. data.basic): ')
     main(module_name)
+
+    print ('\\\\\\\\\\\\\\\\\\ DONE //////////////////')

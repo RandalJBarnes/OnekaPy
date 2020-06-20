@@ -124,7 +124,7 @@ def compute_capturezone(
 
 
 # -------------------------------------
-def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
+def compute_backtrace(xs, ys, duration, tol, maxstep, feval):        ###_Forward_###  duration < 0 for forward
     """
     Compute a single backtrace using the Dormand-Prince adaptive
     Runge-Kutta explicit solver.
@@ -171,7 +171,7 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
         and adpated from the MATLAB implementation given by
         www.mathtools.com.
 
-    o   This implementation is unique is two significant ways:
+    o   This implementation is unique in two significant ways:
 
         --  The feval is NOT a function of time, as we are working
             with steadystate flow.
@@ -209,7 +209,7 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
 
     # Initialize: the starting point is the first vertex.
     t = 0
-    dt = 0.1                # This is an arbitrary choice.
+    dt = 0.1 * np.sign(duration)               # This is an arbitrary choice.       ###_Forward_###!!! set dt = - sign of duration. 
 
     vertices = [(xs, ys)]
     xy = np.array([xs, ys])
@@ -217,10 +217,10 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
     try:
         k1 = feval(xy)
 
-        while (t < duration):
+        while (abs(t) < abs(duration)):                                            ###_Forward_###!!! change to abs
             # Do not step past duration.
-            if (t + dt > duration):
-                dt = duration - t
+            if (abs(t + dt) > abs(duration)):                                      ###_Forward_###!!! change to abs
+                dt = duration - t                                                  ###_Forward_###  should be ok as is
 
             # The 5th order Runge-Kutta with Dormand-Prince constants.
             k2 = feval(xy + dt*(a2[0]*k1))
@@ -238,12 +238,12 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
             ds = np.linalg.norm(xyt - xy)
 
             if (est < tol) and (ds < maxstep):
-                t = t + dt
+                t = t + dt                                                         ###_Forward_###  should be ok as is
                 k1 = k2
                 xy = xyt
                 vertices.append(xy)
 
-            dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
+            dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt  ###_Forward_###  should be ok as is
 
     except:
         log.warning(' trace terminated prematurely at t = {0:.2f} < duration.'.format(t))

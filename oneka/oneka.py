@@ -81,6 +81,10 @@ def oneka(
     The entry-point for the Oneka project. As currently written,
     this driver computes and plots the stochastic capture zone.
 
+    All arguments should be in consistent units.  No unit conversions are made.
+    Some hard-coded format statements may not work well with units much larger
+    or smaller than those tested with.  Tested with  ft,days, or  m,days.   
+
     Arguments
     ---------
     projectname : string
@@ -101,6 +105,7 @@ def oneka(
     duration : float
         The duration of the capture zone [d]. For example, a 10-year
         capture zone would have a duration = 10*365.25.
+        For forward tracing, define a negative duration.                    ###_Forward_###!!!  Trial idea
 
     nrealizations : int
         The number of realizations of the random model.
@@ -200,7 +205,7 @@ def oneka(
 
     assert(isinstance(target, int) and 0 <= target < len(stochastic_wells))
     assert(isinstance(npaths, int) and 0 < npaths)
-    assert((isinstance(duration, int) or isinstance(duration, float)) and 0 < duration)
+    assert((isinstance(duration, int) or isinstance(duration, float)) and 0 != duration)  ###_Forward_###
 
     assert(isinstance(base, int) or isinstance(base, float))
     assert(isdistribution(c_dist, 0, np.inf))
