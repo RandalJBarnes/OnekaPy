@@ -124,7 +124,7 @@ def compute_capturezone(
 
 
 # -------------------------------------
-def compute_backtrace(xs, ys, duration, tol, maxstep, feval):        ###_Forward_###  duration < 0 for forward
+def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
     """
     Compute a single backtrace using the Dormand-Prince adaptive
     Runge-Kutta explicit solver.
@@ -140,6 +140,7 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):        ###_Forward
     duration : float
         The duration of the capture zone [d]; e.g. a ten year capture zone
         will have a duration = 10*365.25. 0 < duration.
+        A negative duration results in tracing forward in time.
 
     tol : float
         The tolerance [m] for the local error when solving the backtrace
@@ -209,7 +210,7 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):        ###_Forward
 
     # Initialize: the starting point is the first vertex.
     t = 0
-    dt = 0.1 * np.sign(duration)               # This is an arbitrary choice.       ###_Forward_###!!! set dt = - sign of duration. 
+    dt = 0.1 * np.sign(duration)               # This is an arbitrary choice.        
 
     vertices = [(xs, ys)]
     xy = np.array([xs, ys])
@@ -217,10 +218,10 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):        ###_Forward
     try:
         k1 = feval(xy)
 
-        while (abs(t) < abs(duration)):                                            ###_Forward_###!!! change to abs
+        while (abs(t) < abs(duration)): 
             # Do not step past duration.
-            if (abs(t + dt) > abs(duration)):                                      ###_Forward_###!!! change to abs
-                dt = duration - t                                                  ###_Forward_###  should be ok as is
+            if (abs(t + dt) > abs(duration)): 
+                dt = duration - t 
 
             # The 5th order Runge-Kutta with Dormand-Prince constants.
             k2 = feval(xy + dt*(a2[0]*k1))
@@ -238,12 +239,12 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):        ###_Forward
             ds = np.linalg.norm(xyt - xy)
 
             if (est < tol) and (ds < maxstep):
-                t = t + dt                                                         ###_Forward_###  should be ok as is
+                t = t + dt
                 k1 = k2
                 xy = xyt
                 vertices.append(xy)
 
-            dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt  ###_Forward_###  should be ok as is
+            dt = 0.9 * min((tol/(est + EPS))**(1/5), maxstep/(ds + EPS), 10) * dt
 
     except:
         log.warning(' trace terminated prematurely at t = {0:.2f} < duration.'.format(t))
