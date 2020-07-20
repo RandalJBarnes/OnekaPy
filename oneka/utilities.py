@@ -1,34 +1,31 @@
 """
-A small set of utilitiy functions.
+A small set of utility functions.
 
 Functions
 ---------
-    filter_obs(observations, wellfield, buffer):
-        Partition the obs into retained and removed. An observation is
-        removed if it is within buffer of a well. Duplicate observations
-        (i.e. obs at the same loction) are average using a minimum
-        variance weighted average.
+filter_obs(observations, wellfield, buffer):
+    Partition the obs into retained and removed. An observation is
+    removed if it is within buffer of a well. Duplicate observations
+    (i.e. obs at the same loction) are average using a minimum
+    variance weighted average.
 
-    summary_statistics(values, names, formats, title)
-        Create a simple summary statistics table.
+summary_statistics(values, names, formats, title)
+    Create a simple summary statistics table.
 
 Author
 ------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
 Version
 -------
-    10 May 2020
-"""
+20 July 2020
 
+"""
 import io
 import logging
-import matplotlib.pyplot as plt
 import numpy as np
-
-import oneka.model
 
 log = logging.getLogger('Oneka')
 
@@ -52,11 +49,11 @@ def filter_obs(observations, wellfield, buffer):
                 The y-coordinate of the observation [m].
 
             z_ev : float
-                The expected value of the observed static water level 
+                The expected value of the observed static water level
                 elevation [m].
 
             z_std : float
-                The standard deviation of the observed static water level 
+                The standard deviation of the observed static water level
                 elevation [m].
 
     wellfield : list
@@ -173,8 +170,8 @@ def summary_statistics(values, names, formats, title):
 
     Usage
     -----
-    buf = summary_statistics(data, ['X', 'Y', 'Z'], ['8.2f', '6.3f', '9.4e'], 'This is a TITLE')    
-    
+    buf = summary_statistics(data, ['X', 'Y', 'Z'], ['8.2f', '6.3f', '9.4e'], 'This is a TITLE')
+
     """
 
     # Compute sizes of stuff.
@@ -206,9 +203,9 @@ def summary_statistics(values, names, formats, title):
 
     # Write out the header.
     buf.write('{0:^{w}s}'.format(title, w=total_width))
-    buf.write('\n')    
+    buf.write('\n')
     buf.write('=' * total_width)
-    buf.write('\n')    
+    buf.write('\n')
 
     buf.write('     ')
     for j in range(nvar):
@@ -217,7 +214,7 @@ def summary_statistics(values, names, formats, title):
     buf.write('-' * total_width)
     buf.write('\n')
 
-    # Write out the cnt  
+    # Write out the cnt
     buf.write('cnt: ')
     for j in range(nvar):
         buf.write('{0:>{w}d}'.format(vcnt[j], w=widths[j]))
@@ -235,7 +232,7 @@ def summary_statistics(values, names, formats, title):
         buf.write('{0:{fmt}}'.format(vmed[j], fmt=formats[j]))
     buf.write('\n')
 
-    # Write out the max 
+    # Write out the max
     buf.write('max: ')
     for j in range(nvar):
         buf.write('{0:{fmt}}'.format(vmax[j], fmt=formats[j]))

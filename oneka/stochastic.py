@@ -20,9 +20,13 @@ create_stochastic_capturezone(
     tol, maxstep):
 Compute the stochastic capture zone for the target well.
 
-generate_random_variate(arg) :
+generate_random_variate(arg):
     Generate a random variate from a dirac (constant), uniform,
     or triangular distribution, depending on the argument tuple.
+
+compute_variate_mean(arg):
+    Compute the mean for a dirac (constant), uniform, or triangular
+    distribution, depending on the argument tuple.
 
 isdistribution(arg, lb, ub):
     Do the given arguments define a valid distribution?
@@ -44,12 +48,11 @@ Minnesota Department of Health
 
 Version
 -------
-11 May 2020
-"""
+20 July 2020
 
+"""
 import logging
 import numpy as np
-import progressbar
 
 from oneka.capturezone import compute_capturezone
 from oneka.model import Model
@@ -209,9 +212,9 @@ def create_stochastic_capturezone(
     pfield = ProbabilityField(spacing, spacing, xtarget, ytarget)
 
     # Initialize the progress bar.
-    bar = progressbar.ProgressBar(maxval=nrealizations)
-    bar.start()
-    bar.update(0)
+    # bar = progressbar.ProgressBar(maxval=nrealizations)
+    # bar.start()
+    # bar.update(0)
 
     # Generate and register the capture zone realizations.
     for i in range(nrealizations):
@@ -232,7 +235,7 @@ def create_stochastic_capturezone(
         # Create the model with the random components.
         mo = Model(base, conductivity, porosity, thickness, wells)
 
-        # Generate the realizations for the regional flow ceofficients.
+        # Generate the realizations for the regional flow coefficients.
         coef_ev, coef_cov = mo.fit_regional_flow(observations, xtarget, ytarget)
         coef_ev = np.reshape(coef_ev, [6, ])
         mo.coef = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
@@ -262,9 +265,9 @@ def create_stochastic_capturezone(
                             pfield, umbra, 1.0, tol, maxstep, feval)
 
         # Update the progress bar.
-        bar.update(i+1)
+        # bar.update(i+1)
 
-    return pfield    
+    return pfield
 
 
 # ------------------------------------------------------------------------------
@@ -302,6 +305,41 @@ def generate_random_variate(arg):
 
     return value
 
+
+# ------------------------------------------------------------------------------
+def compute_variate_mean(arg):
+    """
+    Compute the mean for a dirac (constant), uniform, or triangular
+    distribution, depending on the argument tuple.
+
+    Arguments
+    ---------
+    arg : scalar, pair, or triple
+        scalar -> constant,
+        pair -> (min, max) for a uniform distribution, or
+        triple -> (min, mode, max) for a triangular distribution.
+
+    Raises
+    ------
+    TypeError
+        <arg> must be a scalar, pair, or triple.
+
+    Returns
+    -------
+    value : float
+        The mean of the specified distribution.
+    """
+
+    if type(arg) is not tuple:
+        value = arg
+    elif len(arg) == 2:
+        value = (arg[0] + arg[1])/2.0
+    elif len(arg) == 3:
+        value = (arg[0] + arg[1] + arg[2])/3.0
+    else:
+        raise DistributionError('<arg> must be a scalar, pair, or triple.')
+
+    return value
 
 # ------------------------------------------------------------------------------
 def isdistribution(arg, lb, ub):

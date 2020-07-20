@@ -12,7 +12,7 @@ None.
 Functions
 ---------
 dump_oneka(
-        projectname, runtime,    
+        projectname, runtime,
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
@@ -21,7 +21,7 @@ dump_oneka(
         pfield)
 
 load_oneka(filename)
-    
+
 Authors
 -------
 Dr. Randal J. Barnes
@@ -34,9 +34,9 @@ Minnesota Department of Health
 
 Version
 -------
-11 May 2020
-"""
+20 July 2020
 
+"""
 import bz2
 from datetime import datetime
 import pickle
@@ -60,21 +60,21 @@ def dump_oneka(
         'projectname' : projectname,
         'runtime' : runtime,
         'target' : target,
-        'npaths' : npaths, 
-        'duration' : duration, 
+        'npaths' : npaths,
+        'duration' : duration,
         'nrealizations' : nrealizations,
-        'base' : base, 
-        'c_dist' : c_dist, 
-        'p_dist' : p_dist, 
+        'base' : base,
+        'c_dist' : c_dist,
+        'p_dist' : p_dist,
         't_dist' : t_dist,
-        'stochastic_wells' : stochastic_wells, 
+        'stochastic_wells' : stochastic_wells,
         'observations' : observations,
-        'buffer' : buffer, 
-        'spacing' : spacing, 
+        'buffer' : buffer,
+        'spacing' : spacing,
         'umbra' : umbra,
         'smooth' : smooth,
-        'confined' : confined, 
-        'tol' : tol, 
+        'confined' : confined,
+        'tol' : tol,
         'maxstep' : maxstep,
         'pfield' : pfield}
 

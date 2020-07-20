@@ -4,7 +4,7 @@ A small set of visualization functions.
 Functions
 ---------
 contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
-    Compute and plot the filled-contour map for the head, 
+    Compute and plot the filled-contour map for the head,
     as defined by model mo.
 
 contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols)
@@ -13,11 +13,11 @@ contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols)
 
 create_probability_plot(target, stochastic_wells, obs, pf, smooth):
     Create the visible filled-contour plot for the stochastic capture
-    zone. 
+    zone.
 
 create_impact_plot(spacing, pf):
-    Create the visible impact plot (area vs. probability of capture) for the 
-    probability field.        
+    Create the visible impact plot (area vs. probability of capture) for the
+    probability field.
 
 quick_capture_zone(mo, we, nrays, nyears, maxstep, fmt)
     Compute and plot a capture zone for Well we using Model mo.
@@ -39,9 +39,9 @@ Minnesota Department of Health
 
 Version
 -------
-11 May 2020
-"""
+20 July 2020
 
+"""
 import io
 import logging
 import matplotlib.pyplot as plt
@@ -67,7 +67,7 @@ class CaptureZoneError(Error):
 # ------------------------------------------------------------------------------
 def contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
     """
-    Create a visible filled contour map of the piezometric head, as defined 
+    Create a visible filled contour map of the piezometric head, as defined
     by model mo.
 
     Arguments
@@ -77,7 +77,7 @@ def contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 
     xmin : float
         The left edge of the map. xmin < xmax.
-        
+
     xmax : float
         The right edge of the map. xmax > xmin.
 
@@ -89,7 +89,7 @@ def contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 
     nrows : int
         The number of grid rows. nrow > 1.
-    
+
     ncols : int
         The number of grid columns. ncols > 1.
 
@@ -117,7 +117,7 @@ def contour_head(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 # ------------------------------------------------------------------------------
 def contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols):
     """
-    Create a visible filled contour map of the discharge potential, as defined 
+    Create a visible filled contour map of the discharge potential, as defined
     by model mo.
 
     Arguments
@@ -127,7 +127,7 @@ def contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 
     xmin : float
         The left edge of the map. xmin < xmax.
-        
+
     xmax : float
         The right edge of the map. xmax > xmin.
 
@@ -139,7 +139,7 @@ def contour_potential(mo, xmin, xmax, ymin, ymax, nrows, ncols):
 
     nrows : int
         The number of grid rows. nrow > 1.
-    
+
     ncols : int
         The number of grid columns. ncols > 1.
 
@@ -232,7 +232,7 @@ def create_probability_plot(target, stochastic_wells, obs, pf, smooth=0):
 
     if smooth > 0:
         Z = scipy.ndimage.gaussian_filter(Z, smooth, mode='constant', cval=0.0)
-        
+
     plt.contourf(X, Y, Z, np.linspace(0, 1, 11), cmap='tab10')
     plt.colorbar(ticks=np.linspace(0, 1, 11))
     plt.contour(X, Y, Z, np.linspace(0.1, 0.9, 9), colors=['black'])
@@ -259,7 +259,7 @@ def create_probability_plot(target, stochastic_wells, obs, pf, smooth=0):
 # ------------------------------------------------------------------------------
 def create_impact_plot(spacing, pf):
     """
-    Create the visible impact plot (area vs. probability of capture) for the 
+    Create the visible impact plot (area vs. probability of capture) for the
     probability field.
 
     Arguments

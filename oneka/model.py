@@ -34,9 +34,9 @@ Minnesota Department of Health
 
 Version
 -------
-11 Model 2020
-"""
+20 July 2020
 
+"""
 import logging
 import numpy as np
 
@@ -117,7 +117,7 @@ class Model:
         Compute the vertically averaged seepage velocity vector [m/d] at (x, y).
 
     fit_coefficients(self, obs, xo, yo):
-        Fit the regionalflow's coefficient using weighted least squares.    
+        Fit the regionalflow's coefficient using weighted least squares.
 
     construct_fit(self, obs):
         Construct the weighted least squares matrices for fitting the regional flow.
@@ -470,8 +470,8 @@ class Model:
 
         Notes
         -----
-        o   If xo, yo are ommitted, the centroid of the observations is
-            used as the orgin of the regional flow.
+        o   If xo, yo are omitted, the centroid of the observations is
+            used as the origin of the regional flow.
 
         o   The caller should eliminate observations that are too
             close to pumping wells.
@@ -490,7 +490,7 @@ class Model:
         self.xo = xo
         self.yo = yo
         self.coef = coef_ev
-        
+
         return(coef_ev, coef_cov)
 
     # ---------------------------------

@@ -12,7 +12,7 @@ RangeError
 
 Notes
 -----
-o   TODO: Add some explanation of what the ProbabilityField is, and 
+o   TODO: Add some explanation of what the ProbabilityField is, and
     how it works.
 
 Authors
@@ -27,9 +27,9 @@ Minnesota Department of Health
 
 Version
 -------
-11 May 2020
-"""
+20 July 2020
 
+"""
 import logging
 import math
 import numpy as np

@@ -1,7 +1,9 @@
 # local
 logs/
 *.log
-.vscode
+.idea/
+references/
+doc/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

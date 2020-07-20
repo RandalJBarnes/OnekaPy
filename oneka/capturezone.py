@@ -38,9 +38,9 @@ Minnesota Department of Health
 
 Version
 -------
-11 May 2020
-"""
+20 July 2020
 
+"""
 import logging
 import numpy as np
 
@@ -210,7 +210,7 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
 
     # Initialize: the starting point is the first vertex.
     t = 0
-    dt = 0.1 * np.sign(duration)               # This is an arbitrary choice.        
+    dt = 0.1 * np.sign(duration)               # This is an arbitrary choice.
 
     vertices = [(xs, ys)]
     xy = np.array([xs, ys])
@@ -218,10 +218,10 @@ def compute_backtrace(xs, ys, duration, tol, maxstep, feval):
     try:
         k1 = feval(xy)
 
-        while (abs(t) < abs(duration)): 
+        while (abs(t) < abs(duration)):
             # Do not step past duration.
-            if (abs(t + dt) > abs(duration)): 
-                dt = duration - t 
+            if (abs(t + dt) > abs(duration)):
+                dt = duration - t
 
             # The 5th order Runge-Kutta with Dormand-Prince constants.
             k2 = feval(xy + dt*(a2[0]*k1))

@@ -51,16 +51,16 @@ Minnesota Department of Health
 
 Version
 -------
-11 May 2020
-"""
+20 July 2020
 
+"""
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
 from oneka.archive import dump_oneka
-from oneka.probabilityfield import ProbabilityField
 from oneka.stochastic import create_stochastic_capturezone, isdistribution
+from oneka.deterministic import create_deterministic_capturezone
 from oneka.utilities import filter_obs, summary_statistics
 from oneka.visualize import create_probability_plot, create_impact_plot
 
@@ -83,7 +83,7 @@ def oneka(
 
     All arguments should be in consistent units.  No unit conversions are made.
     Some hard-coded format statements may not work well with units much larger
-    or smaller than those tested with.  Tested with  ft,days, or  m,days.   
+    or smaller than those tested with.  Tested with  ft,days, or  m,days.
 
     Arguments
     ---------
@@ -105,10 +105,14 @@ def oneka(
     duration : float
         The duration of the capture zone [d]. For example, a 10-year
         capture zone would have a duration = 10*365.25.
-        For forward tracing, define a negative duration.                    ###_Forward_###!!!  Trial idea
+        For forward tracing, define a negative duration.
 
     nrealizations : int
         The number of realizations of the random model.
+
+        If nrealizations = 1, then a deterministic capture zone is generated
+        using the mean values for all model parameters: aquifer properties,
+        pumping rates, and the and the six fitted Oneka coefficients.
 
     base : float
         The aquifer base elevation [m].
@@ -239,7 +243,7 @@ def oneka(
 
     # Log the run information.
     log_the_run(
-        projectname, runtime,        
+        projectname, runtime,
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
@@ -251,18 +255,42 @@ def oneka(
     assert(len(obs) > 6)
 
     # Log the summary statistics.
-    buf = summary_statistics(obs, ['Easting', 'Northing', 'Head', 'Stdev'], 
+    buf = summary_statistics(obs, ['Easting', 'Northing', 'Head', 'Stdev'],
         ['12.2f', '12.2f', '12.2f', '12.2f'], 'Retained Observations')
     log.info('\n')
     log.info(buf.getvalue())
 
-    # Create the stochastic capture zone for the target well.
-    pfield = create_stochastic_capturezone(
-        target, npaths, duration, nrealizations,
-        base, c_dist, p_dist, t_dist,
-        stochastic_wells, obs,
-        spacing, umbra, confined,
-        tol, maxstep)
+    # Create the stochastic or deterministic  capture zone for the target well.
+    if nrealizations > 1:
+        pfield = create_stochastic_capturezone(
+            target, npaths, duration, nrealizations,
+            base, c_dist, p_dist, t_dist,
+            stochastic_wells, obs,
+            spacing, umbra, confined,
+            tol, maxstep)
+
+        # Make the impact plot.
+        pr, area = create_impact_plot(spacing, pfield)
+
+        # Log the decile results.
+        log.info('\n')
+        log.info('===========================================')
+        log.info(' Pr(capture)         Area             Area ')
+        log.info(' Exceeds            [m^2]          [acres] ')
+        log.info('-------------------------------------------')
+        for p in np.linspace(0.05, 0.95, 19):
+            i = np.argmax(pr <= p)
+            log.info('{0:8.3f} {1:16,.0f} {2:16,.2f}'
+                     .format(pr[i], area[i], area[i] / 4046.86))  # 4046.86 m^2/acre
+        log.info('===========================================')
+
+    else:
+        pfield = create_deterministic_capturezone(
+            target, npaths, duration,
+            base, c_dist, p_dist, t_dist,
+            stochastic_wells, obs,
+            spacing, umbra, confined,
+            tol, maxstep)
 
     # Archive the run.
     dump_oneka(
@@ -274,21 +302,6 @@ def oneka(
         confined, tol, maxstep,
         pfield)
 
-    # Make the impact plot.
-    pr, area = create_impact_plot(spacing, pfield)
-
-    # Log the decile results.
-    log.info('\n')
-    log.info('===========================================')
-    log.info(' Pr(capture)         Area             Area ')
-    log.info(' Exceeds            [m^2]          [acres] ')
-    log.info('-------------------------------------------')
-    for p in np.linspace(0.05, 0.95, 19):
-        i = np.argmax(pr<=p)
-        log.info('{0:8.3f} {1:16,.0f} {2:16,.2f}'
-            .format(pr[i], area[i], area[i]/4046.86))               # 4046.86 m^2/acre
-    log.info('===========================================')
-
     # Make the filled contour plot.
     create_probability_plot(target, stochastic_wells, obs, pfield, smooth)
 
@@ -296,7 +309,7 @@ def oneka(
 
 # ------------------------------------------------------------------------------
 def log_the_run(
-        projectname, runtime,    
+        projectname, runtime,
         target, npaths, duration, nrealizations,
         base, c_dist, p_dist, t_dist,
         stochastic_wells, observations,
@@ -322,7 +335,12 @@ def log_the_run(
     log.info('target        = {0:d}'.format(target))
     log.info('npaths        = {0:d}'.format(npaths))
     log.info('duration      = {0:.2f}'.format(duration))
-    log.info('nrealizations = {0:d}'.format(nrealizations))
+
+    if nrealizations > 1:
+        log.info('nrealizations = {0:d} STOCHASTIC'.format(nrealizations))
+    else:
+        log.info('nrealizations = {0:d} DETERMINISTIC'.format(nrealizations))
+
     log.info('base          = {0:.2f}'.format(base))
     log.info('c_dist        = {0}'.format(c_dist))
     log.info('p_dist        = {0}'.format(p_dist))
