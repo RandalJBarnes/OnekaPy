@@ -27,14 +27,14 @@ Minnesota Department of Health
 
 Version
 -------
-20 July 2020
+25 July 2020
 
 """
 import logging
 import math
 import numpy as np
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("Oneka")
 
 
 # ---------------------------------------------------------

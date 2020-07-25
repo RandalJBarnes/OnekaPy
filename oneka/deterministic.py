@@ -37,7 +37,7 @@ Minnesota Department of Health
 
 Version
 -------
-20 July 2020
+25 July 2020
 
 """
 import logging
@@ -48,7 +48,7 @@ from oneka.model import Model
 from oneka.probabilityfield import ProbabilityField
 from oneka.stochastic import compute_variate_mean
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("Oneka")
 
 
 class Error(Exception):
@@ -169,11 +169,8 @@ def create_deterministic_capturezone(
 
     Notes
     -----
-    o   This is a very time-consuming function.
-
-    o   We may be able to speed this up by parallelizing the backtrace
-        calls.
-
+    o   This uses the average of all stochastic parameters to generate a
+        deterministic capture zone.
     """
 
     # Initialize.
@@ -181,7 +178,7 @@ def create_deterministic_capturezone(
     pfield = ProbabilityField(spacing, spacing, xtarget, ytarget)
 
     # Generate a realization of a random well field:
-    # fixed loations, random discharges.
+    # fixed locations, random discharges.
     wells = []
     for w in stochastic_wells:
         xw, yw, rw = w[0:3]
@@ -199,16 +196,26 @@ def create_deterministic_capturezone(
     # Generate the realizations for the regional flow coefficients.
     coef_ev, coef_cov = mo.fit_regional_flow(observations, xtarget, ytarget)
     coef_ev = np.reshape(coef_ev, [6, ])
-    mo.coef = np.random.default_rng().multivariate_normal(coef_ev, coef_cov)
+    mo.coef = coef_ev
 
-    # Log some basic information about the realization.
-    recharge = 2*(mo.coef[0] + mo.coef[1])
-    log.info('Deterministic: {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}, {4:.4e}'
-             .format(base, conductivity, porosity, thickness, recharge))
-    log.info('    coef ev:  ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
-             .format(coef_ev[0], coef_ev[1], coef_ev[2], coef_ev[3], coef_ev[4], coef_ev[5]))
-    log.info('    coef rng: ({0:+.4e}, {1:+.4e}, {2:+.4e}, {3:+.4e}, {4:+.4e}, {5:+.4e})'
-             .format(mo.coef[0], mo.coef[1], mo.coef[2], mo.coef[3], mo.coef[4], mo.coef[5]))
+    # Log some basic information about the run using average values.
+    log.info("\n")
+    log.info("Deterministic Capture Zone Parameters: ")
+    log.info(f"base         = {base:.2f}")
+    log.info(f"conductivity = {conductivity:.2f}")
+    log.info(f"porosity     = {porosity:.2f}")
+
+    recharge = -2*(mo.coef[0] + mo.coef[1])
+    log.info(f"recharge     = {recharge:+.4e}")
+
+    log.info("\n")
+    log.info(f"Conic Discharge Potential Coefficients: ")
+    log.info(f"A = {mo.coef[0]:+.4e}")
+    log.info(f"B = {mo.coef[1]:+.4e}")
+    log.info(f"C = {mo.coef[2]:+.4e}")
+    log.info(f"D = {mo.coef[3]:+.4e}")
+    log.info(f"E = {mo.coef[4]:+.4e}")
+    log.info(f"F = {mo.coef[5]:+.4e}")
 
     # Define the local backtracing velocity function.
     if confined:

@@ -38,7 +38,7 @@ Minnesota Department of Health
 
 Version
 -------
-20 July 2020
+25 July 2020
 
 """
 import logging

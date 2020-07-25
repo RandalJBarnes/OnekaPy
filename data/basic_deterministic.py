@@ -1,7 +1,7 @@
-PROJECTNAME = 'Basic determinisitc example'
+PROJECTNAME = 'Basic deterministic example'
 
 TARGET = 0
-NPATHS = 200
+NPATHS = 100
 DURATION = 10*365.25
 NREALIZATIONS = 1
 

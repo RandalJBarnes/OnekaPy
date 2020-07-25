@@ -51,7 +51,7 @@ Minnesota Department of Health
 
 Version
 -------
-20 July 2020
+25 July 2020
 
 """
 import logging
@@ -62,11 +62,11 @@ from oneka.archive import dump_oneka
 from oneka.stochastic import create_stochastic_capturezone, isdistribution
 from oneka.deterministic import create_deterministic_capturezone
 from oneka.utilities import filter_obs, summary_statistics
-from oneka.visualize import create_probability_plot, create_impact_plot
+from oneka.visualize import create_probability_plot, create_impact_plot, create_deterministic_plot
 
 log = logging.getLogger('Oneka')
 
-VERSION = '10 May 2020'
+VERSION = '25 July 2020'
 
 
 # ------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ def oneka(
     log.info('\n')
     log.info(buf.getvalue())
 
-    # Create the stochastic or deterministic  capture zone for the target well.
+    # Create the stochastic or deterministic capture zone for the target well.
     if nrealizations > 1:
         pfield = create_stochastic_capturezone(
             target, npaths, duration, nrealizations,
@@ -268,6 +268,9 @@ def oneka(
             stochastic_wells, obs,
             spacing, umbra, confined,
             tol, maxstep)
+
+        # Make the filled contour plot.
+        create_probability_plot(target, stochastic_wells, obs, pfield, smooth)
 
         # Make the impact plot.
         pr, area = create_impact_plot(spacing, pfield)
@@ -292,6 +295,15 @@ def oneka(
             spacing, umbra, confined,
             tol, maxstep)
 
+        # Make the capture zone plot.
+        area = create_deterministic_plot(target, stochastic_wells, obs, pfield)
+
+        # Log the deterministic capture zone area.
+        log.info('\n')
+        log.info(f'Capture Zone Area:')
+        log.info(f'{area:.0f} [m^2]')
+        log.info(f'{area/4046.86:.2f} [acres]')                 # 4046.86 m^2/acre
+
     # Archive the run.
     dump_oneka(
         projectname, runtime,
@@ -301,9 +313,6 @@ def oneka(
         buffer, spacing, umbra, smooth,
         confined, tol, maxstep,
         pfield)
-
-    # Make the filled contour plot.
-    create_probability_plot(target, stochastic_wells, obs, pfield, smooth)
 
     plt.show()
 

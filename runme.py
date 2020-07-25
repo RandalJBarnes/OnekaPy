@@ -1,21 +1,21 @@
 """
-A simple driver for OnekaPy. 
+A simple driver for OnekaPy.
 
 Authors
 -------
-    Dr. Randal J. Barnes
-    Department of Civil, Environmental, and Geo- Engineering
-    University of Minnesota
+Dr. Randal J. Barnes
+Department of Civil, Environmental, and Geo- Engineering
+University of Minnesota
 
-    Richard Soule
-    Source Water Protection
-    Minnesota Department of Health
+Richard Soule
+Source Water Protection
+Minnesota Department of Health
 
 Version
 -------
-    10 May 2020
-"""
+25 July 2020
 
+"""
 from datetime import datetime
 import logging
 import time
@@ -51,12 +51,7 @@ def main(module_name):
     fh = logging.FileHandler(filename=fname)
     fh.setLevel(logging.INFO)
 
-    # Create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
-
     # Add the handlers to logger
-    logger.addHandler(ch)
     logger.addHandler(fh)
 
     log = logging.getLogger('Oneka')
@@ -93,7 +88,7 @@ def profile_me():
 
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    module_name = input('Enter the module name (without .py, e.g. data.basic): ')
+    module_name = input('Enter the data module name (without .py, e.g. data.basic): ')
     main(module_name)
 
     print ('\\\\\\\\\\\\\\\\\\ DONE //////////////////')

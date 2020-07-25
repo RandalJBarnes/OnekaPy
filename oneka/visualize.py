@@ -39,10 +39,9 @@ Minnesota Department of Health
 
 Version
 -------
-20 July 2020
+25 July 2020
 
 """
-import io
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -255,6 +254,101 @@ def create_probability_plot(target, stochastic_wells, obs, pf, smooth=0):
     yo = [ob[1] for ob in obs]
     plt.plot(xo, yo, 'P', markeredgecolor='k', markerfacecolor='w')
 
+
+# ------------------------------------------------------------------------------
+def create_deterministic_plot(target, stochastic_wells, obs, pf, smooth=0):
+    """
+    Create the visible capture zone plot.
+
+    Arguments
+    ---------
+    target : int
+        The index identifying the target well in the stochastic_wells.
+        That is, the well for which we will compute a stochastic
+        capture zone. This uses python's 0-based indexing.
+
+    stochastic_wells : list of stochastic well tuples
+        A well tuple contains four values (sort of): (xw, yw, rw, qdist)
+            xw : float
+                The x-coordinate of the well [m].
+            yw : float
+                The y-coordinate of the well [m].
+            rw : float
+                The radius of the well [m].
+            q_dist : scalar, pair, or triple
+                The distribution of the well discharge. If
+                    scalar -> constant,
+                    pair -> (min, max) for a uniform distribution, or
+                    triple -> (min, mode, max) for a triangular distribution.
+
+    obs : list of observation tuples.
+        An observation tuple contains four values: (x, y, z_ev, z_std), where
+            x : float
+                The x-coordinate of the observation [m].
+            y : float
+                The y-coordinate of the observation [m].
+            z_ev : float
+                The expected value of the observed static water level elevation [m].
+            z_std : float
+                The standard deviation of the observed static water level elevation [m].
+
+    pf : ProbabilityField
+        The auto-expanding, axis-aligned, grid-based probability field.
+
+    Returns
+    -------
+    area : float
+        Area of the deterministic capture zone.
+
+    Raises
+    ------
+    CaptureZoneError
+    """
+
+    # Make the probability contour plot.
+    plt.figure()
+    plt.axis('equal')
+
+    if pf.total_weight <= 0:
+        log.warning(' There were no valid realizations.')
+        raise CaptureZoneError('Empty capture zone')
+
+    X = np.linspace(pf.xmin, pf.xmax, pf.ncols)
+    Y = np.linspace(pf.ymin, pf.ymax, pf.nrows)
+    Z = pf.pgrid/pf.total_weight
+
+    dx = X[1] - X[0]
+    dy = Y[1] - Y[0]
+    cell_area = dx*dy
+
+    area = 0
+    for i, y in enumerate(Y):
+        ycorners = [y-dy/2, y-dy/2, y+dy/2, y+dy/2, y-dy/2]
+        for j, x in enumerate(X):
+            xcorners = [x-dx/2, x+dx/2, x+dx/2, x-dx/2, x-dx/2]
+            if Z[i, j] > 0:
+                plt.fill(xcorners, ycorners, "r")
+                area += cell_area
+
+    plt.xlabel('UTM Easting [m]')
+    plt.ylabel('UTM Northing [m]')
+    plt.grid(True)
+
+    # Plot the stochastic_wells as o markers.
+    xw = [we[0] for we in stochastic_wells]
+    yw = [we[1] for we in stochastic_wells]
+    plt.plot(xw, yw, 'o', markeredgecolor='k', markerfacecolor='w')
+
+    # Plot the target well as a star marker.
+    xtarget, ytarget = stochastic_wells[target][0:2]
+    plt.plot(xtarget, ytarget, '*', markeredgecolor='k', markerfacecolor='w', markersize=12)
+
+    # Plot the retained observations as fat + markers.
+    xo = [ob[0] for ob in obs]
+    yo = [ob[1] for ob in obs]
+    plt.plot(xo, yo, 'P', markeredgecolor='k', markerfacecolor='w')
+
+    return area
 
 # ------------------------------------------------------------------------------
 def create_impact_plot(spacing, pf):

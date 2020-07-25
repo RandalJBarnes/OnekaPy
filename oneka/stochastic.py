@@ -48,7 +48,7 @@ Minnesota Department of Health
 
 Version
 -------
-20 July 2020
+25 July 2020
 
 """
 import logging
@@ -59,7 +59,7 @@ from oneka.model import Model
 from oneka.probabilityfield import ProbabilityField
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("Oneka")
 
 
 class Error(Exception):
